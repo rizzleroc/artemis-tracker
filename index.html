@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARTEMIS II // TACTICAL OVERVIEW</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            user-select: none;
+        }
+
+        /* Palantir / CRT Vibe Overlays */
+        .crt-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 3px, 3px 100%;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .vignette {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.8) 100%);
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Tactical Panels */
+        .hud-panel {
+            background: rgba(0, 15, 5, 0.6);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.1), inset 0 0 20px rgba(0, 255, 0, 0.05);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+
+        .hud-panel-header {
+            background: rgba(0, 255, 0, 0.15);
+            border-bottom: 1px solid rgba(0, 255, 0, 0.5);
+            padding: 4px 8px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #0f0;
+            letter-spacing: 1px;
+        }
+
+        /* Tracking Bounding Box */
+        .target-box {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #0f0;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 60;
+            box-shadow: 0 0 10px #0f0, inset 0 0 10px #0f0;
+            transition: width 0.2s, height 0.2s;
+        }
+        
+        .target-box::before, .target-box::after,
+        .target-box-inner::before, .target-box-inner::after {
+            content: ''; position: absolute; width: 10px; height: 10px; border: 2px solid #fff; box-shadow: 0 0 5px #fff;
+        }
+        .target-box::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .target-box::after { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .target-box-inner { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        .target-box-inner::before { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .target-box-inner::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        .target-label {
+            position: absolute;
+            top: -25px;
+            left: 70px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid #0f0;
+            padding: 2px 6px;
+            font-size: 10px;
+            white-space: nowrap;
+            text-shadow: 0 0 4px #0f0;
+            pointer-events: none;
+        }
+
+        .target-line {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 70px; height: 1px;
+            background: #0f0;
+            transform-origin: left center;
+            transform: rotate(-20deg);
+        }
+
+        .text-glow { text-shadow: 0 0 8px #0f0; }
+        .text-warn { color: #fa0; text-shadow: 0 0 8px #fa0; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 20, 0, 0.5); }
+        ::-webkit-scrollbar-thumb { background: #0f0; }
+
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; }
+    </style>
+    <!-- Import Maps for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Visual Effects -->
+    <div class="crt-overlay"></div>
+    <div class="vignette"></div>
+
+    <!-- 3D Canvas -->
+    <div id="webgl-container"></div>
+
+    <!-- Target Tracking UI -->
+    <div id="target-ui" class="target-box hidden">
+        <div class="target-box-inner"></div>
+        <div class="target-line"></div>
+        <div class="target-label">
+            <div id="target-obj-name">OBJ: ORION CM</div>
+            <div id="target-dist">DIST: SYNCING...</div>
+        </div>
+    </div>
+
+    <!-- HUD Overlays -->
+    <div class="absolute top-4 left-4 flex flex-col gap-4 z-[100] w-80 pointer-events-none">
+        
+        <!-- Main Telemetry Panel -->
+        <div class="hud-panel flex flex-col pointer-events-auto">
+            <div class="hud-panel-header flex justify-between">
+                <span>SYS.OP.COMMAND</span>
+                <span class="blink">LIVE // SECURE API</span>
+            </div>
+            <div class="p-3 text-sm flex flex-col gap-2">
+                <div class="flex justify-between border-b border-green-900 pb-1">
+                    <span class="text-gray-400">MISSION</span>
+                    <span id="mission-readout" class="text-glow">COLLECTING...</span>
+                </div>
+                <div class="flex justify-between border-b border-green-900 pb-1">
+                    <span class="text-gray-400">PHASE</span>
+                    <span id="phase-readout" class="text-warn font-bold">AWAITING CONNECTION</span>
+                </div>
+                <div class="flex justify-between border-b border-green-900 pb-1">
+                    <span class="text-gray-400">MET (T+)</span>
+                    <span id="met-clock" class="text-glow">AWAITING SYNC</span>
+                </div>
+                <div class="flex justify-between border-b border-green-900 pb-1">
+                    <span class="text-gray-400">VELOCITY</span>
+                    <span id="vel-readout">--- m/s</span>
+                </div>
+                <div class="flex justify-between border-b border-green-900 pb-1">
+                    <span class="text-gray-400">ALT (EARTH)</span>
+                    <span id="alt-readout">--- km</span>
+                </div>
+                <div class="flex justify-between border-b border-green-900 pb-1">
+                    <span class="text-gray-400">DIST (MOON)</span>
+                    <span id="moon-readout">--- km</span>
+                </div>
+                <div class="flex justify-between mt-1">
+                    <span class="text-gray-400">COMMS SIG</span>
+                    <span class="text-glow" id="comms-readout">VERCEL API LINK</span>
+                </div>
+                <div class="flex justify-between mt-1 text-[10px] text-gray-500">
+                    <span>SOURCE</span>
+                    <span id="source-readout">INITIATING FETCH...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crew Biometrics -->
+        <div class="hud-panel flex flex-col pointer-events-auto">
+            <div class="hud-panel-header">CREW BIOMETRICS</div>
+            <div class="p-3 text-xs flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-glow">CMDR WISEMAN</div>
+                        <div class="text-gray-400">BPM: <span id="bpm-0">--</span> | O2: 99%</div>
+                    </div>
+                    <div class="h-6 w-16 bg-green-900/30 border border-green-800 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-green-500 opacity-20" style="width: 80%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-glow">PLT GLOVER</div>
+                        <div class="text-gray-400">BPM: <span id="bpm-1">--</span> | O2: 98%</div>
+                    </div>
+                    <div class="h-6 w-16 bg-green-900/30 border border-green-800 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-green-500 opacity-20" style="width: 85%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-glow">MS1 KOCH</div>
+                        <div class="text-gray-400">BPM: <span id="bpm-2">--</span> | O2: 99%</div>
+                    </div>
+                    <div class="h-6 w-16 bg-green-900/30 border border-green-800 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-green-500 opacity-20" style="width: 75%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-glow">MS2 HANSEN</div>
+                        <div class="text-gray-400">BPM: <span id="bpm-3">--</span> | O2: 99%</div>
+                    </div>
+                    <div class="h-6 w-16 bg-green-900/30 border border-green-800 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-green-500 opacity-20" style="width: 78%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side System Logs -->
+    <div class="absolute top-4 right-4 flex flex-col gap-4 z-[100] w-80 pointer-events-none">
+        <div class="hud-panel flex flex-col pointer-events-auto h-96">
+            <div class="hud-panel-header">DECRYPTED TELEMETRY LOGS</div>
+            <div id="log-container" class="p-3 text-xs flex flex-col gap-1 overflow-y-auto h-full font-mono">
+                <!-- Logs injected via JS -->
+            </div>
+        </div>
+        
+        <div class="hud-panel p-3 pointer-events-auto flex flex-col gap-2 text-xs">
+            <div class="flex gap-2 justify-between">
+                <button id="btn-units" class="border border-green-500 hover:bg-green-900/50 px-2 py-1 text-glow w-full transition-colors">UNITS: IMPERIAL</button>
+                <button id="btn-style" class="border border-green-500 hover:bg-green-900/50 px-2 py-1 text-glow w-full transition-colors ml-2">STYLE: TRON</button>
+            </div>
+            <div class="flex gap-2 justify-between mt-1">
+                <button id="btn-earth" class="border border-green-500 hover:bg-green-900/50 px-2 py-1 text-glow w-full transition-colors">LOCK EARTH</button>
+                <button id="btn-orion" class="border border-green-500 hover:bg-green-900/50 px-2 py-1 text-glow w-full bg-green-900/30 transition-colors mx-2">LOCK ORION</button>
+                <button id="btn-moon" class="border border-green-500 hover:bg-green-900/50 px-2 py-1 text-glow w-full transition-colors">LOCK MOON</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==========================================
+        // 1. CUSTOM VERCEL API ENGINE
+        // ==========================================
+        
+        // Paste your deployed Vercel URL here once deployed:
+        // Example: "https://my-artemis-api.vercel.app/api"
+        const MY_VERCEL_API = "./api/data.json";  // GitHub Pages - static JSON 
+        
+        let logs = [];
+        let isMiles = true; 
+        let isRealistic = false;
+
+        let currentDistanceKm = null;
+        let currentMoonDistKm = null; 
+        let currentVelocityMs = null;
+
+        function logMsg(level, message) {
+            const timestamp = new Date().toISOString().substring(11, 19);
+            logs.push({ time: timestamp, level, message });
+            if (logs.length > 30) logs.shift();
+            const logContainer = document.getElementById('log-container');
+            logContainer.innerHTML = '';
+            logs.forEach(log => {
+                const color = log.level === 'ERR' || log.level === 'FATAL' ? 'text-red-500' : 'text-gray-500';
+                const div = document.createElement('div');
+                div.innerHTML = `<span class="${color}">[${log.time}] [${log.level}]</span> ${log.message}`;
+                logContainer.appendChild(div);
+            });
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateDisplayValues() {
+            if (currentDistanceKm === null || currentVelocityMs === null) {
+                document.getElementById('vel-readout').innerText = "---";
+                document.getElementById('alt-readout').innerText = "---";
+                document.getElementById('moon-readout').innerText = "---";
+                document.getElementById('target-dist').innerText = "DIST: NO DATA";
+                return;
+            }
+
+            let distStr, moonStr, velStr;
+            if (isMiles) {
+                distStr = (currentDistanceKm * 0.621371).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' mi';
+                moonStr = (currentMoonDistKm * 0.621371).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' mi';
+                velStr = (currentVelocityMs * 2.23694).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' mph';
+            } else {
+                distStr = currentDistanceKm.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' km';
+                moonStr = currentMoonDistKm.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' km';
+                velStr = currentVelocityMs.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' m/s';
+            }
+
+            document.getElementById('vel-readout').innerText = velStr;
+            document.getElementById('alt-readout').innerText = distStr;
+            document.getElementById('moon-readout').innerText = moonStr;
+            document.getElementById('target-dist').innerText = `DIST: ${distStr}`;
+        }
+
+        async function collectLiveData() {
+            if (!MY_VERCEL_API) {
+                document.getElementById('phase-readout').innerText = "API NOT CONFIGURED";
+                document.getElementById('source-readout').innerText = "WAITING FOR VERCEL DEPLOY";
+                document.getElementById('mission-readout').innerText = "STANDBY";
+                logMsg('WARN', 'Paste your Vercel URL into the code or set via localStorage artemisApiUrl.');
+                return;
+            }
+
+            document.getElementById('phase-readout').innerText = "COLLECTING LIVE DATA...";
+            document.getElementById('source-readout').innerText = "QUERYING VERCEL API...";
+            logMsg('SYS', 'Fetching parsed vectors from dedicated API.');
+
+            try {
+                const res = await fetch(MY_VERCEL_API);
+                if (!res.ok) throw new Error(`Vercel returned ${res.status}`);
+                
+                const data = await res.json();
+                
+                if (data.error) throw new Error(data.error);
+
+                currentDistanceKm = data.distKm;
+                currentMoonDistKm = data.moonDistKm;
+                currentVelocityMs = data.velMs;
+
+                document.getElementById('phase-readout').innerText = data.phase;
+                document.getElementById('source-readout').innerText = data.source;
+                document.getElementById('target-obj-name').innerText = data.targetName;
+                document.getElementById('mission-readout').innerText = "ARTEMIS II OVERRIDE";
+                
+                logMsg('SUCCESS', `Data acquired. V=${currentVelocityMs}m/s`);
+                updateDisplayValues();
+
+            } catch(e) {
+                currentDistanceKm = null;
+                currentMoonDistKm = null;
+                currentVelocityMs = null;
+                
+                document.getElementById('phase-readout').innerText = "API FETCH FAILED";
+                document.getElementById('source-readout').innerText = "VERCEL UNAVAILABLE";
+                
+                logMsg('ERR', `API Fetch Failed: ${e.message}`);
+                updateDisplayValues();
+            }
+        }
+
+        // Poll Live Engine every 10 seconds
+        setInterval(collectLiveData, 10000);
+        collectLiveData();
+
+        // Biometrics Jitter
+        setInterval(() => {
+            for(let i=0; i<4; i++) {
+                const el = document.getElementById(`bpm-${i}`);
+                if (el && currentDistanceKm !== null) {
+                    let base = [68, 72, 64, 66][i];
+                    let current = parseInt(el.innerText) || base;
+                    let jitter = (Math.random() > 0.5 ? 1 : -1) * (Math.random() > 0.7 ? 1 : 0);
+                    current += jitter;
+                    if(current < 60) current = 60;
+                    if(current > 85) current = 85;
+                    el.innerText = current;
+                } else if (el) {
+                    el.innerText = "--";
+                }
+            }
+        }, 1000);
+
+        // Independent MET Clock
+        const LAUNCH_DATE = new Date("2026-04-01T22:36:00Z").getTime();
+        setInterval(() => {
+            const now = Date.now();
+            let elapsedSec = Math.floor((now - LAUNCH_DATE) / 1000);
+            if (elapsedSec < 0) elapsedSec = 0; 
+            const d = Math.floor(elapsedSec / (24 * 3600));
+            const h = Math.floor((elapsedSec % (24 * 3600)) / 3600);
+            const m = Math.floor((elapsedSec % 3600) / 60);
+            const s = elapsedSec % 60;
+            document.getElementById('met-clock').innerText = 
+                `${String(d).padStart(2,'0')}:${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }, 1000);
+
+        // ==========================================
+        // 2. THREE.JS 3D ENVIRONMENT
+        // ==========================================
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 40, 100);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 500;
+
+        // NEW LIGHTING FOR REALISTIC MODE
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0);
+        scene.add(ambientLight);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0);
+        sunLight.position.set(100, 50, 50);
+        scene.add(sunLight);
+
+        // Grid & Starfield
+        const gridHelper = new THREE.GridHelper(400, 100, 0x00ff00, 0x003300);
+        gridHelper.position.y = -20;
+        gridHelper.material.opacity = 0.3;
+        gridHelper.material.transparent = true;
+        scene.add(gridHelper);
+
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({ color: 0x88ff88, size: 0.5, transparent: true, opacity: 0.6 });
+        const starsVertices = [];
+        for(let i=0; i<3000; i++) {
+            starsVertices.push(
+                THREE.MathUtils.randFloatSpread(1000),
+                THREE.MathUtils.randFloatSpread(1000),
+                THREE.MathUtils.randFloatSpread(1000)
+            );
+        }
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+        scene.add(new THREE.Points(starsGeometry, starsMaterial));
+
+        // Celestial Bodies & Materials
+        const earthTronMat = new THREE.MeshBasicMaterial({ color: 0x001100, wireframe: true });
+        const earthRealMat = new THREE.MeshStandardMaterial({ color: 0x1a457b, roughness: 0.7, metalness: 0.1 });
+        const earth = new THREE.Mesh(new THREE.SphereGeometry(8, 32, 32), earthTronMat);
+        
+        const earthGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(8.2, 32, 32),
+            new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.1, wireframe: false })
+        );
+        earth.add(earthGlow);
+        scene.add(earth);
+
+        const moonTronMat = new THREE.MeshBasicMaterial({ color: 0x333333, wireframe: true });
+        const moonRealMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9, metalness: 0.0 });
+        const moon = new THREE.Mesh(new THREE.SphereGeometry(2.2, 16, 16), moonTronMat);
+        moon.position.set(120, 0, -40);
+        scene.add(moon);
+
+        // Visual Trajectory Path
+        const points = [
+            new THREE.Vector3(0, 0, 0), new THREE.Vector3(30, 5, -10), new THREE.Vector3(80, 10, -25),
+            new THREE.Vector3(125, 0, -45), new THREE.Vector3(115, -10, -35), new THREE.Vector3(60, -5, -15),
+            new THREE.Vector3(20, -2, -5), new THREE.Vector3(0, 0, 0)
+        ];
+        const curve = new THREE.CatmullRomCurve3(points, true, 'catmullrom', 0.5);
+        
+        const tubeTronMat = new THREE.MeshBasicMaterial({ color: 0x004400, wireframe: true, transparent: true, opacity: 0.4 });
+        const tubeRealMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.1 });
+        const pathMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 256, 0.2, 8, true), tubeTronMat);
+        scene.add(pathMesh);
+
+        // Orion Mesh
+        const orionTronMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+        const orionRealMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.8, roughness: 0.2 });
+        const orion = new THREE.Mesh(new THREE.OctahedronGeometry(1.5, 0), orionTronMat);
+        
+        const orionCore = new THREE.Mesh(
+            new THREE.SphereGeometry(0.8, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+        );
+        orion.add(orionCore);
+        scene.add(orion);
+
+        // Active Path Line (Trailing effect)
+        const activePathGeo = new THREE.BufferGeometry();
+        const activePathTronMat = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
+        const activePathRealMat = new THREE.LineBasicMaterial({ color: 0x88bbff, linewidth: 2 });
+        const activePathLine = new THREE.Line(activePathGeo, activePathTronMat);
+        scene.add(activePathLine);
+
+        // Animation State
+        let targetLock = 'ORION'; 
+        const targetUi = document.getElementById('target-ui');
+        const clock = new THREE.Clock();
+
+        // UI Controls Events
+        document.getElementById('btn-units').addEventListener('click', (e) => {
+            isMiles = !isMiles;
+            e.target.innerText = isMiles ? 'UNITS: IMPERIAL' : 'UNITS: METRIC';
+            updateDisplayValues();
+        });
+
+        document.getElementById('btn-style').addEventListener('click', (e) => {
+            isRealistic = !isRealistic;
+            e.target.innerText = isRealistic ? 'STYLE: REALISTIC' : 'STYLE: TRON';
+            
+            if (isRealistic) {
+                document.querySelector('.crt-overlay').style.display = 'none';
+                gridHelper.visible = false;
+                earth.material = earthRealMat;
+                moon.material = moonRealMat;
+                orion.material = orionRealMat;
+                pathMesh.material = tubeRealMat;
+                activePathLine.material = activePathRealMat;
+                ambientLight.intensity = 0.4;
+                sunLight.intensity = 2.0;
+                earthGlow.visible = false;
+                orionCore.visible = false;
+            } else {
+                document.querySelector('.crt-overlay').style.display = 'block';
+                gridHelper.visible = true;
+                earth.material = earthTronMat;
+                moon.material = moonTronMat;
+                orion.material = orionTronMat;
+                pathMesh.material = tubeTronMat;
+                activePathLine.material = activePathTronMat;
+                ambientLight.intensity = 0;
+                sunLight.intensity = 0;
+                earthGlow.visible = true;
+                orionCore.visible = true;
+            }
+        });
+
+        // Camera Lock Controls
+        document.getElementById('btn-earth').addEventListener('click', (e) => { targetLock = 'EARTH'; updateNavBtns(e.target); });
+        document.getElementById('btn-orion').addEventListener('click', (e) => { targetLock = 'ORION'; updateNavBtns(e.target); });
+        document.getElementById('btn-moon').addEventListener('click', (e) => { targetLock = 'MOON'; updateNavBtns(e.target); });
+
+        function updateNavBtns(btn) {
+            ['btn-earth', 'btn-orion', 'btn-moon'].forEach(id => document.getElementById(id).classList.remove('bg-green-900/30'));
+            btn.classList.add('bg-green-900/30');
+        }
+
+        // Render Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            earth.rotation.y += 0.05 * delta;
+            moon.rotation.y += 0.01 * delta;
+            orion.rotation.x += 0.5 * delta;
+            orion.rotation.y += 0.3 * delta;
+
+            // SYNC 3D POSITION TO PURE NETWORK DATA
+            if (currentDistanceKm !== null) {
+                orion.visible = true;
+                activePathLine.visible = true;
+                
+                // Physically map the collected distance ratio (Earth to Moon is ~384,400km)
+                // We use 0.5 as the curve's apolune (Moon intercept point)
+                const distanceRatio = Math.min((currentDistanceKm / 384400) * 0.5, 0.5);
+                
+                const pos = curve.getPointAt(distanceRatio);
+                orion.position.copy(pos);
+                
+                const trailPoints = [];
+                for(let i=Math.max(0, distanceRatio - 0.1); i <= distanceRatio; i+=0.001) {
+                    trailPoints.push(curve.getPointAt(i));
+                }
+                activePathGeo.setFromPoints(trailPoints);
+
+                // Screen Projection for Palantir Target Box
+                const vector = orion.position.clone();
+                vector.project(camera);
+
+                if (vector.z < 1) { 
+                    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = -(vector.y * 0.5 - 0.5) * window.innerHeight;
+                    
+                    targetUi.style.display = 'block';
+                    targetUi.style.left = `${x}px`;
+                    targetUi.style.top = `${y}px`;
+                    
+                    const boxSize = 60 + Math.sin(time * 5) * 5;
+                    targetUi.style.width = `${boxSize}px`;
+                    targetUi.style.height = `${boxSize}px`;
+                } else {
+                    targetUi.style.display = 'none'; 
+                }
+            } else {
+                // Hide targeting visuals if network collection is totally failed
+                orion.visible = false;
+                activePathLine.visible = false;
+                targetUi.style.display = 'none'; 
+            }
+
+            // Camera Tracking
+            let targetPos = new THREE.Vector3();
+            if(targetLock === 'ORION' && currentDistanceKm !== null) targetPos.copy(orion.position);
+            else if (targetLock === 'EARTH' || targetLock === 'ORION') targetPos.copy(earth.position);
+            else if (targetLock === 'MOON') targetPos.copy(moon.position);
+            
+            controls.target.lerp(targetPos, 0.05);
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+name: Update Artemis II Telemetry
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # Every 10 minutes
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches: [main]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Fetch NASA Data
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const TARGET_ID = "-1024";
+            const FALLBACK_ID = "301";
+            
+            const formatTime = (d) => {
+              const pad = (n) => n.toString().padStart(2, '0');
+              return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+            };
+            
+            const now = new Date();
+            const startStr = formatTime(new Date(now.getTime() - 86400000));
+            const stopStr = formatTime(new Date(now.getTime() + 86400000));
+            
+            const getUrl = (id) => `https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND='${id}'&OBJ_DATA='NO'&MAKE_EPHEM='YES'&EPHEM_TYPE='VECTORS'&CENTER='500@399'&START_TIME='${startStr}'&STOP_TIME='${stopStr}'&STEP_SIZE='1d'&VEC_TABLE='2'&OUT_UNITS='KM-S'`;
+            
+            async function fetchData() {
+              let response = await fetch(getUrl(TARGET_ID).replace(/'/g, '%27').replace(/ /g, '%20'));
+              let data = await response.json();
+              
+              let source = "NASA JPL HORIZONS (ARTEMIS II)";
+              let targetName = "OBJ: ORION EM-2";
+              let phase = "TRANSLUNAR INJECTION";
+              
+              if (!data.result || !data.result.includes("$$SOE")) {
+                response = await fetch(getUrl(FALLBACK_ID).replace(/'/g, '%27').replace(/ /g, '%20'));
+                data = await response.json();
+                source = "NASA JPL HORIZONS (LUNAR FALLBACK)";
+                targetName = "OBJ: MOON (CALIBRATION)";
+                phase = "SYSTEM CALIBRATION";
+              }
+              
+              if (!data.result || !data.result.includes("$$SOE")) {
+                throw new Error("No vector data");
+              }
+              
+              const vectorBlock = data.result.split("$$SOE")[1].split("$$EOE")[0];
+              
+              const extractAll = (key, hasSpace = true) => {
+                const space = hasSpace ? ' ' : '';
+                const regex = new RegExp(`${key}${space}=([+-]?\\d*\\.?\\d+(?:[eEdD][+-]?\\d+)?)`, 'gi');
+                const matches = vectorBlock.match(regex);
+                if (!matches || matches.length === 0) return 0;
+                const lastMatch = matches[matches.length - 1];
+                const valueMatch = lastMatch.match(/=([+-]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)/i);
+                if (!valueMatch) return 0;
+                return parseFloat(valueMatch[1].replace(/D/i, 'e'));
+              };
+              
+              const x = extractAll('X', true); 
+              const y = extractAll('Y', true); 
+              const z = extractAll('Z', true);
+              const vx = extractAll('VX', false); 
+              const vy = extractAll('VY', false); 
+              const vz = extractAll('VZ', false);
+              
+              const distKm = Math.floor(Math.sqrt(x*x + y*y + z*z));
+              const velKms = Math.sqrt(vx*vx + vy*vy + vz*vz);
+              const velMs = Math.floor(velKms * 1000);
+              const moonDistKm = Math.abs(384400 - distKm);
+              
+              if (distKm < 10000) phase = "EARTH ORBIT";
+              else if (distKm < 100000) phase = "CLIMBING";
+              else if (distKm < 300000) phase = "TRANS-LUNAR";
+              else if (moonDistKm < 50000) phase = "LUNAR APPROACH";
+              else phase = "OUTBOUND COAST";
+              
+              return {
+                distKm, velMs, velKms: Math.round(velKms * 100) / 100,
+                moonDistKm, phase, source, targetName,
+                position: { x: Math.round(x), y: Math.round(y), z: Math.round(z) },
+                velocity: { vx: Math.round(vx * 1000) / 1000, vy: Math.round(vy * 1000) / 1000, vz: Math.round(vz * 1000) / 1000 },
+                timestamp: new Date().toISOString()
+              };
+            }
+            
+            const result = await fetchData();
+            require('fs').writeFileSync('api/data.json', JSON.stringify(result, null, 2));
+            console.log('Data updated:', result);
+      
+      - name: Commit and Push
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add api/data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update Artemis II telemetry" && git push)

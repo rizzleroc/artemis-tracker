@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DEBUG - Artemis Dashboard</title>
+    <style>
+        body { font-family: monospace; background: #0a0c10; color: #70c0a0; padding: 20px; margin: 0; }
+        .error { color: #e06060; background: rgba(224,96,96,0.1); padding: 10px; margin: 5px 0; }
+        .success { color: #50a080; }
+        .info { color: #c9a050; }
+        #log { background: rgba(0,0,0,0.5); padding: 10px; height: 300px; overflow: auto; border: 1px solid #333; }
+        #canvas-container { width: 400px; height: 300px; border: 2px solid #c9a050; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h2>🧪 DEBUG MODE</h2>
+    <div id="status">Loading...</div>
+    <div id="canvas-container"></div>
+    <div id="log"></div>
+    
+    <script type="module">
+        const log = (msg, type='info') => {
+            const el = document.createElement('div');
+            el.className = type;
+            el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('log').appendChild(el);
+        };
+        
+        window.onerror = (msg, url, line) => {
+            log(`ERROR: ${msg} (line ${line})`, 'error');
+        };
+        
+        try {
+            log('Starting Three.js import...');
+            const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
+            log(`✅ Three.js ${THREE.REVISION} loaded`, 'success');
+            
+            // Test basic scene
+            log('Creating scene...');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0c10);
+            log('✅ Scene created', 'success');
+            
+            // Test camera
+            const camera = new THREE.PerspectiveCamera(45, 400/300, 0.1, 1000);
+            camera.position.set(0, 0, 50);
+            log('✅ Camera created', 'success');
+            
+            // Test renderer
+            log('Creating renderer...');
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(400, 300);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            log('✅ Renderer created', 'success');
+            
+            // Test geometry
+            log('Creating Earth sphere...');
+            const earthGeo = new THREE.SphereGeometry(10, 32, 32);
+            const earthMat = new THREE.MeshBasicMaterial({ color: 0x1a3a5a, wireframe: true });
+            const earth = new THREE.Mesh(earthGeo, earthMat);
+            scene.add(earth);
+            log('✅ Earth mesh added', 'success');
+            
+            // Test Moon
+            log('Creating Moon...');
+            const moonGeo = new THREE.SphereGeometry(3, 16, 16);
+            const moonMat = new THREE.MeshBasicMaterial({ color: 0x888888 });
+            const moon = new THREE.Mesh(moonGeo, moonMat);
+            moon.position.set(30, 0, 0);
+            scene.add(moon);
+            log('✅ Moon mesh added', 'success');
+            
+            // Render
+            log('Rendering...');
+            renderer.render(scene, camera);
+            log('✅ First frame rendered!', 'success');
+            
+            // Animation
+            function animate() {
+                requestAnimationFrame(animate);
+                earth.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animate();
+            log('✅ Animation running', 'success');
+            
+            document.getElementById('status').innerHTML = '<span class="success">BASIC THREE.JS WORKING</span>';
+            
+        } catch(e) {
+            log(`CRITICAL ERROR: ${e.message}`, 'error');
+            log(e.stack, 'error');
+            document.getElementById('status').innerHTML = '<span class="error">FAILED - See log</span>';
+        }
+    </script>
+</body>
+</html>

@@ -425,11 +425,39 @@
     </div>
 
     <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        // Debug logging
+        const DEBUG = true;
+        function debug(msg) { 
+            if (DEBUG) console.log('[DEBUG]', msg);
+            const log = document.getElementById('log');
+            if (log) {
+                const entry = document.createElement('div');
+                entry.innerHTML = `[INIT] ${msg}`;
+                entry.style.color = '#c9a050';
+                log.appendChild(entry);
+            }
+        }
+        
+        try {
+            debug('Loading Three.js...');
+            const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
+            debug(`Three.js ${THREE.REVISION} loaded`);
+            
+            debug('Loading OrbitControls...');
+            const { OrbitControls } = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js');
+            debug('OrbitControls loaded');
+            
+            debug('Loading EffectComposer...');
+            const { EffectComposer } = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js');
+            debug('EffectComposer loaded');
+            
+            debug('Loading RenderPass...');
+            const { RenderPass } = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js');
+            debug('RenderPass loaded');
+            
+            debug('Loading UnrealBloomPass...');
+            const { UnrealBloomPass } = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js');
+            debug('UnrealBloomPass loaded');
 
         const API_BASE = 'https://kimicode.vercel.app/api';
         
@@ -452,9 +480,11 @@
         }
         
         // ========== SCENE ==========
+        debug('Creating scene...');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0c10);
         scene.fog = new THREE.FogExp2(0x0a0c10, 0.00002);
+        debug('Scene created');
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
         camera.position.set(50, 30, 80);
@@ -464,6 +494,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
+        debug(`Renderer created: ${window.innerWidth}x${window.innerHeight}`);
 
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
@@ -502,6 +533,7 @@
             new THREE.SphereGeometry(10.5, 64, 64),
             new THREE.MeshBasicMaterial({ color: 0x6090c0, transparent: true, opacity: 0.12, side: THREE.BackSide, blending: THREE.AdditiveBlending })
         ));
+        debug('Earth mesh created');
 
         // Moon
         const moonGroup = new THREE.Group();
@@ -513,6 +545,7 @@
             undefined, () => {}
         );
         moonGroup.add(new THREE.Mesh(new THREE.SphereGeometry(2.7, 64, 64), moonMat));
+        debug('Moon mesh created');
 
         // ========== CORRECT SCALE ==========
         // Moon orbit: 384,400 km average = 60 units in scene
@@ -799,11 +832,26 @@
         addLog('ORBITAL COMMAND SYSTEM ONLINE', 'artemis');
         addLog('Scale: 384,400 km = 60 units', 'data');
         addLog('Moon positioned at (60, 0, 0)', 'data');
+        debug('Starting animation loop...');
         
         fetchData();
         setInterval(fetchData, 30000);
         updateMET();
         animate();
+        debug('Initialization complete!');
+        
+        } catch(e) {
+            console.error('CRITICAL ERROR:', e);
+            const log = document.getElementById('log');
+            if (log) {
+                const entry = document.createElement('div');
+                entry.innerHTML = `[ERROR] ${e.message}`;
+                entry.style.color = '#e06060';
+                log.appendChild(entry);
+            }
+            document.getElementById('mission-phase').textContent = 'SYSTEM ERROR';
+            document.getElementById('mission-phase').style.color = '#e06060';
+        }
     </script>
 </body>
 </html>

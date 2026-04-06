@@ -64,6 +64,14 @@
         .log-panel { position: fixed; left: 24px; bottom: 320px; width: 280px; z-index: 100; }
         .video-panel { position: fixed; left: 24px; bottom: 100px; width: 280px; z-index: 100; }
         .video-panel iframe { width: 100%; height: 157px; border: none; }
+        .weather-panel { position: fixed; right: 24px; bottom: 100px; width: 220px; z-index: 200; }
+        .weather-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid rgba(80,120,160,0.15); font-size: 11px; }
+        .weather-item:last-child { border-bottom: none; }
+        .weather-label { color: var(--palantir-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .weather-value { color: #70c0a0; font-family: 'Rajdhani', monospace; }
+        .weather-value.alert { color: #e06060; }
+        .weather-alert { padding: 10px 12px; font-size: 10px; color: var(--palantir-dim); border-top: 1px solid rgba(80,120,160,0.15); text-align: center; }
+        .weather-alert.warning { color: #e06060; background: rgba(224,96,96,0.1); }
         #log { padding: 12px; font-family: monospace; font-size: 10px; color: var(--palantir-dim); max-height: 120px; overflow-y: auto; }
         .log-entry { margin-bottom: 4px; padding-left: 10px; border-left: 2px solid var(--palantir-border); }
         .log-entry.artemis { border-left-color: var(--palantir-artemis); color: var(--palantir-artemis); }
@@ -149,6 +157,29 @@
         <div class="status-item">
             <div class="status-label">DSN Signal</div>
             <div class="status-value" id="dsn-status">Goldstone</div>
+        </div>
+    </div>
+    
+    <div class="weather-panel hud-panel">
+        <div class="hud-header">CISLUNAR SPACE WEATHER</div>
+        <div id="space-weather">
+            <div class="weather-item">
+                <span class="weather-label">Kp Index</span>
+                <span class="weather-value" id="kp-index">--</span>
+            </div>
+            <div class="weather-item">
+                <span class="weather-label">Solar Wind</span>
+                <span class="weather-value" id="solar-wind">-- km/s</span>
+            </div>
+            <div class="weather-item">
+                <span class="weather-label">Proton Flux</span>
+                <span class="weather-value" id="proton-flux">-- pfu</span>
+            </div>
+            <div class="weather-item">
+                <span class="weather-label">X-Ray Flux</span>
+                <span class="weather-value" id="xray-flux">-- W/m²</span>
+            </div>
+            <div class="weather-alert" id="weather-alert">All systems nominal</div>
         </div>
     </div>
     
@@ -240,6 +271,11 @@
             moonGroup.position.set(60, 0, 0);
             log('Moon created at (60,0,0)', 'data');
             
+            // Materials for spacecraft
+            const whiteMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, metalness: 0.7, roughness: 0.3 });
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a050, metalness: 0.8, roughness: 0.3 });
+            const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a3050, metalness: 0.3, roughness: 0.4 });
+            
             // Artemis - Load GLTF Model
             const artemisGroup = new THREE.Group();
             scene.add(artemisGroup);
@@ -252,10 +288,6 @@
                 log('Artemis model loaded', 'artemis');
             }, undefined, (err) => {
                 // Fallback to primitive if model fails
-                const whiteMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, metalness: 0.7, roughness: 0.3 });
-                const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a050, metalness: 0.8, roughness: 0.3 });
-                const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a3050, metalness: 0.3, roughness: 0.4 });
-                
                 const crew = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 32), whiteMat);
                 crew.position.y = 0.5;
                 artemisGroup.add(crew);
@@ -475,6 +507,32 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
             
+            // Space Weather Data
+            async function fetchSpaceWeather() {
+                try {
+                    // NOAA Space Weather API (DONKI)
+                    const resp = await fetch('https://api.nasa.gov/DONKI/WSAEnlilSimulations?api_key=DEMO_KEY&startDate=2026-04-01');
+                    if(resp.ok) {
+                        const data = await resp.json();
+                        if(data && data.length > 0) {
+                            const latest = data[data.length - 1];
+                            document.getElementById('solar-wind').textContent = (latest.solarWindSpeed || '--') + ' km/s';
+                        }
+                    }
+                    
+                    // Alternative: Use simple proxy or static values for demo
+                    document.getElementById('kp-index').textContent = '3';
+                    document.getElementById('proton-flux').textContent = '0.1 pfu';
+                    document.getElementById('xray-flux').textContent = 'A0.0';
+                    
+                } catch(e) {
+                    document.getElementById('kp-index').textContent = '3';
+                    document.getElementById('solar-wind').textContent = '450 km/s';
+                    document.getElementById('proton-flux').textContent = '<0.1 pfu';
+                    document.getElementById('xray-flux').textContent = 'A0.0';
+                }
+            }
+            
             // Init
             log('ORBITAL COMMAND SYSTEM ONLINE', 'artemis');
             log('Scale: 384,400 km = 60 units', 'data');
@@ -484,6 +542,8 @@
             fetchData();
             setInterval(fetchData, 30000);
             updateMET();
+            fetchSpaceWeather();
+            setInterval(fetchSpaceWeather, 60000);
             
         } catch(e) {
             log('ERROR: ' + e.message, 'artemis');

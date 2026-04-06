@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBITAL COMMAND // ARTEMIS II</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --palantir-bg: #0a0c10;
+            --palantir-panel: rgba(15, 20, 30, 0.92);
+            --palantir-border: rgba(80, 120, 160, 0.3);
+            --palantir-accent: #4090c0;
+            --palantir-artemis: #c9a050;
+            --palantir-text: #a8c0d8;
+            --palantir-dim: #5a7088;
+        }
+        body { background: var(--palantir-bg); color: var(--palantir-text); font-family: 'Rajdhani', sans-serif; overflow: hidden; font-size: 12px; }
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px); pointer-events: none; z-index: 1000; opacity: 0.6; }
+        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%); pointer-events: none; z-index: 1001; }
+        .hud-panel { background: var(--palantir-panel); border: 1px solid var(--palantir-border); backdrop-filter: blur(20px); box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+        .hud-header { background: linear-gradient(90deg, rgba(64,144,192,0.3), transparent); border-bottom: 1px solid var(--palantir-border); padding: 10px 14px; font-weight: 600; letter-spacing: 3px; font-size: 10px; text-transform: uppercase; color: var(--palantir-accent); }
+        .mission-clock { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: var(--palantir-panel); border: 1px solid var(--palantir-artemis); padding: 14px 40px; z-index: 200; text-align: center; box-shadow: 0 0 30px rgba(201,160,80,0.2); }
+        .mission-clock .label { font-size: 9px; color: var(--palantir-dim); letter-spacing: 4px; }
+        .mission-clock .time { font-family: 'Rajdhani', monospace; font-size: 32px; font-weight: 700; color: var(--palantir-artemis); text-shadow: 0 0 20px rgba(201,160,80,0.4); letter-spacing: 2px; }
+        .mission-clock .phase { font-size: 11px; color: #70c0a0; margin-top: 4px; letter-spacing: 2px; }
+        .primary-panel { position: fixed; left: 24px; top: 100px; width: 280px; z-index: 100; }
+        .metric { padding: 14px 16px; border-bottom: 1px solid rgba(80,120,160,0.15); }
+        .metric:last-child { border-bottom: none; }
+        .metric-label { color: var(--palantir-dim); font-size: 9px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+        .metric-value { color: #fff; font-size: 22px; font-weight: 600; font-family: 'Rajdhani', monospace; letter-spacing: 1px; }
+        .metric-value.artemis { color: var(--palantir-artemis); text-shadow: 0 0 15px rgba(201,160,80,0.3); }
+        .layer-panel { position: fixed; top: 100px; right: 24px; z-index: 200; width: 180px; }
+        .layer-btn { background: transparent; border: 1px solid var(--palantir-border); border-left: 3px solid var(--palantir-border); color: var(--palantir-dim); padding: 12px 16px; font-family: 'Rajdhani', sans-serif; font-size: 11px; cursor: pointer; transition: all 0.2s; width: 100%; text-align: left; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+        .layer-btn:hover { border-color: var(--palantir-accent); color: var(--palantir-text); }
+        .layer-btn.active { background: rgba(64,144,192,0.1); border-left-color: var(--palantir-accent); color: #fff; }
+        .layer-btn.active.artemis-layer { border-left-color: var(--palantir-artemis); background: rgba(201,160,80,0.1); }
+        .camera-dock { position: fixed; bottom: 24px; left: 24px; z-index: 200; display: flex; gap: 8px; }
+        .view-btn { background: var(--palantir-panel); border: 1px solid var(--palantir-border); color: var(--palantir-dim); padding: 10px 20px; font-family: 'Rajdhani', sans-serif; font-size: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+        .view-btn:hover { border-color: var(--palantir-accent); color: var(--palantir-text); }
+        .view-btn.active { background: rgba(201,160,80,0.15); border-color: var(--palantir-artemis); color: var(--palantir-artemis); }
+        #log { padding: 12px; font-family: monospace; font-size: 10px; color: var(--palantir-dim); max-height: 120px; overflow-y: auto; }
+        .log-entry { margin-bottom: 4px; padding-left: 10px; border-left: 2px solid var(--palantir-border); }
+        .log-entry.artemis { border-left-color: var(--palantir-artemis); color: var(--palantir-artemis); }
+        .log-entry.data { border-left-color: #50a080; color: #70c0a0; }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div id="canvas-container"></div>
+    
+    <div class="mission-clock">
+        <div class="label">MISSION ELAPSED TIME</div>
+        <div class="time" id="met">T+00 00:00:00</div>
+        <div class="phase" id="mission-phase">INITIALIZING...</div>
+    </div>
+    
+    <div class="primary-panel hud-panel">
+        <div class="hud-header">SYSTEM LOG</div>
+        <div id="log"></div>
+    </div>
+    
+    <div class="layer-panel">
+        <button class="layer-btn active artemis-layer" onclick="toggleLayer('artemis')">Artemis II</button>
+        <button class="layer-btn active" onclick="toggleLayer('trajectory')">Trajectory</button>
+        <button class="layer-btn" onclick="toggleLayer('iss')">ISS</button>
+        <button class="layer-btn active" onclick="toggleLayer('moon')">Moon</button>
+        <button class="layer-btn" onclick="toggleLayer('planets')">Planets</button>
+    </div>
+    
+    <div class="camera-dock">
+        <button class="view-btn active" onclick="setCamera('artemis')">Chase</button>
+        <button class="view-btn" onclick="setCamera('moon')">Lunar</button>
+        <button class="view-btn" onclick="setCamera('earth')">Earth</button>
+        <button class="view-btn" onclick="setCamera('system')">System</button>
+    </div>
+
+    <script>
+        console.log('[APP] Starting Artemis Tracker v2...');
+        const logEl = document.getElementById('log');
+        function log(msg, type='info') {
+            console.log('[Artemis]', msg);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = msg;
+            logEl.appendChild(entry);
+        }
+        
+        try {
+            log('Three.js r' + THREE.REVISION + ' loaded', 'artemis');
+            
+            // Scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0c10);
+            log('Scene created', 'data');
+            
+            // Camera
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100000);
+            camera.position.set(50, 30, 80);
+            
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            log('Renderer: ' + window.innerWidth + 'x' + window.innerHeight, 'data');
+            
+            // Controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            
+            // Lights
+            scene.add(new THREE.AmbientLight(0x203040, 0.5));
+            const sun = new THREE.DirectionalLight(0xfff8e8, 1.5);
+            sun.position.set(100, 50, 50);
+            scene.add(sun);
+            
+            // Earth Group
+            const earthGroup = new THREE.Group();
+            scene.add(earthGroup);
+            
+            // Earth Mesh
+            const earthMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(10, 64, 64),
+                new THREE.MeshStandardMaterial({ color: 0x1a3a5a, metalness: 0.3, roughness: 0.7 })
+            );
+            earthGroup.add(earthMesh);
+            log('Earth created', 'data');
+            
+            // Moon
+            const moonGroup = new THREE.Group();
+            const moonMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(2.7, 32, 32),
+                new THREE.MeshStandardMaterial({ color: 0x888888 })
+            );
+            moonGroup.add(moonMesh);
+            moonGroup.position.set(60, 0, 0);
+            scene.add(moonGroup);
+            log('Moon created at (60,0,0)', 'data');
+            
+            // Artemis
+            const artemisGroup = new THREE.Group();
+            artemisGroup.add(new THREE.Mesh(
+                new THREE.ConeGeometry(0.3, 0.6, 16),
+                new THREE.MeshStandardMaterial({ color: 0xe8e8e8 })
+            ));
+            artemisGroup.add(new THREE.Mesh(
+                new THREE.CylinderGeometry(0.25, 0.25, 0.6, 16),
+                new THREE.MeshStandardMaterial({ color: 0xc9a050 })
+            ));
+            artemisGroup.position.set(47, 1.5, 14);
+            scene.add(artemisGroup);
+            log('Artemis created', 'data');
+            
+            // Trajectory
+            const trajPoints = [];
+            for(let i=0; i<=50; i++) {
+                const t = i/50;
+                trajPoints.push(new THREE.Vector3(t*55, Math.sin(t*Math.PI)*5, t*10));
+            }
+            const trajLine = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints(trajPoints),
+                new THREE.LineBasicMaterial({ color: 0x70c0a0 })
+            );
+            scene.add(trajLine);
+            log('Trajectory created', 'data');
+            
+            // Stars
+            const stars = new THREE.Points(
+                new THREE.BufferGeometry().setFromPoints(
+                    Array.from({length: 5000}, () => new THREE.Vector3(
+                        (Math.random()-0.5)*10000,
+                        (Math.random()-0.5)*10000,
+                        (Math.random()-0.5)*10000
+                    ))
+                ),
+                new THREE.PointsMaterial({ size: 2, color: 0x90a0b8 })
+            );
+            scene.add(stars);
+            
+            let cameraMode = 'artemis';
+            
+            // Animation
+            function animate() {
+                requestAnimationFrame(animate);
+                earthGroup.rotation.y += 0.0005;
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+            log('Animation running!', 'artemis');
+            document.getElementById('mission-phase').textContent = 'SYSTEM ONLINE';
+            
+            // Camera controls
+            window.setCamera = function(mode) {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                event.target.classList.add('active');
+                cameraMode = mode;
+                
+                switch(mode) {
+                    case 'artemis': camera.position.set(52, 32, 94); controls.target.copy(artemisGroup.position); break;
+                    case 'moon': camera.position.set(75, 20, 40); controls.target.copy(moonGroup.position); break;
+                    case 'earth': camera.position.set(30, 20, 50); controls.target.set(0,0,0); break;
+                    case 'system': camera.position.set(100, 50, 100); controls.target.set(30,0,0); break;
+                }
+            };
+            
+            // Layer toggles
+            window.toggleLayer = function(layer) {
+                event.currentTarget.classList.toggle('active');
+                if(layer === 'artemis') artemisGroup.visible = !artemisGroup.visible;
+                if(layer === 'trajectory') trajLine.visible = !trajLine.visible;
+                if(layer === 'moon') moonGroup.visible = !moonGroup.visible;
+            };
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+        } catch(e) {
+            log('ERROR: ' + e.message, 'artemis');
+            console.error(e);
+            document.getElementById('mission-phase').textContent = 'ERROR';
+            document.getElementById('mission-phase').style.color = '#e06060';
+        }
+    </script>
+</body>
+</html>

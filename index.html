@@ -138,11 +138,11 @@
     <div class="layer-panel">
         <button class="layer-btn active artemis-layer" onclick="toggleLayer('artemis')">Artemis II</button>
         <button class="layer-btn active" onclick="toggleLayer('trajectory')">Trajectory</button>
-        <button class="layer-btn" onclick="toggleLayer('iss')">ISS</button>
-        <button class="layer-btn" onclick="toggleLayer('starlink')">Starlink</button>
+        <button class="layer-btn active" onclick="toggleLayer('iss')">ISS</button>
+        <button class="layer-btn active" onclick="toggleLayer('starlink')">Starlink</button>
         <button class="layer-btn active" onclick="toggleLayer('moon')">Moon</button>
         <button class="layer-btn" onclick="toggleLayer('planets')">Planets</button>
-        <button class="layer-btn" onclick="toggleLayer('sun')">Sun</button>
+        <button class="layer-btn active" onclick="toggleLayer('sun')">Sun</button>
         <button class="layer-btn" onclick="toggleLayer('highlight')">Highlight</button>
     </div>
     
@@ -491,7 +491,7 @@
             
             // ISS - Load real GLB model
             const issGroup = new THREE.Group();
-            issGroup.visible = false;
+            issGroup.visible = true;
             scene.add(issGroup);
             
             loader.load('issmodel.glb?v=7', (gltf) => {
@@ -521,7 +521,7 @@
             
             // Starlink satellites group
             const starlinkGroup = new THREE.Group();
-            starlinkGroup.visible = false;
+            starlinkGroup.visible = true;
             scene.add(starlinkGroup);
             const starlinkSatellites = []; // Store individual satellites
             
@@ -659,6 +659,9 @@
                         r * Math.cos(phi),
                         r * Math.sin(phi) * Math.sin(theta)
                     );
+                    console.log('[ISS] Position updated:', allData.iss.latitude, allData.iss.longitude);
+                } else {
+                    console.log('[ISS] No data in API response');
                 }
                 
                 // Update Starlink satellites

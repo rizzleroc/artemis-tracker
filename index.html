@@ -284,35 +284,41 @@
             
             const loader = new THREE.GLTFLoader();
             loader.load('rootmodel.glb?v=4', (gltf) => {
-                const model = gltf.scene;
-                // Adjust scale based on model size - real model may need different scaling
-                model.scale.set(0.02, 0.02, 0.02);
-                // Center the model
-                const box = new THREE.Box3().setFromObject(model);
-                const center = box.getCenter(new THREE.Vector3());
-                model.position.sub(center);
-                
-                // Add green highlight/outline effect
-                const highlightGroup = new THREE.Group();
-                highlightGroup.name = 'highlight';
-                
-                model.traverse((child) => {
-                    if(child.isMesh) {
-                        // Create outline mesh
-                        const outlineGeo = new THREE.EdgesGeometry(child.geometry);
-                        const outlineMat = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
-                        const outline = new THREE.LineSegments(outlineGeo, outlineMat);
-                        outline.scale.copy(child.scale);
-                        outline.position.copy(child.position);
-                        outline.rotation.copy(child.rotation);
-                        highlightGroup.add(outline);
-                    }
-                });
-                
-                artemisGroup.add(model);
-                artemisGroup.add(highlightGroup);
-                log('Artemis model loaded', 'artemis');
-                console.log('[MODEL] Size:', box.getSize(new THREE.Vector3()));
+                try {
+                    const model = gltf.scene;
+                    // Adjust scale based on model size - real model may need different scaling
+                    model.scale.set(0.02, 0.02, 0.02);
+                    // Center the model
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = box.getCenter(new THREE.Vector3());
+                    model.position.sub(center);
+                    
+                    // Add green highlight/outline effect
+                    const highlightGroup = new THREE.Group();
+                    highlightGroup.name = 'highlight';
+                    
+                    model.traverse((child) => {
+                        if(child.isMesh && child.geometry) {
+                            try {
+                                // Create outline mesh
+                                const outlineGeo = new THREE.EdgesGeometry(child.geometry);
+                                const outlineMat = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
+                                const outline = new THREE.LineSegments(outlineGeo, outlineMat);
+                                highlightGroup.add(outline);
+                            } catch(e) {
+                                console.log('[HIGHLIGHT] Skip mesh:', e.message);
+                            }
+                        }
+                    });
+                    
+                    artemisGroup.add(model);
+                    artemisGroup.add(highlightGroup);
+                    log('Artemis model loaded', 'artemis');
+                    console.log('[MODEL] Size:', box.getSize(new THREE.Vector3()));
+                } catch(err) {
+                    console.error('[MODEL] Loading error:', err);
+                    log('Model load failed, using fallback', 'error');
+                }
             }, undefined, (err) => {
                 // Fallback to primitive if model fails
                 const crew = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 32), whiteMat);

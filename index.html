@@ -281,7 +281,7 @@
             scene.add(artemisGroup);
             
             const loader = new THREE.GLTFLoader();
-            loader.load('rootmodle.glb', (gltf) => {
+            loader.load('rootmodel.glb', (gltf) => {
                 const model = gltf.scene;
                 model.scale.set(0.5, 0.5, 0.5);
                 artemisGroup.add(model);

@@ -550,7 +550,7 @@
         artemisGroup.add(artemisFallback);
         
         // Load Artemis GLB model
-        gltfLoader.load('rootmodel.glb?v=7', (gltf) => {
+        gltfLoader.load('rootmodel.glb?v=18', (gltf) => {
             artemisGroup.remove(artemisFallback);
             const artemisModel = gltf.scene;
             const box = new THREE.Box3().setFromObject(artemisModel);
@@ -593,7 +593,7 @@
         issGroup.add(issMarker);
         
         // Load ISS GLB model
-        gltfLoader.load('issmodel.glb?v=7', (gltf) => {
+        gltfLoader.load('issmodel.glb?v=18', (gltf) => {
             issGroup.remove(issFallback);
             const issModel = gltf.scene;
             const box = new THREE.Box3().setFromObject(issModel);
@@ -644,7 +644,7 @@
         
         // Load Starlink GLB model and create instanced version
         let starlinkGLBModel = null;
-        gltfLoader.load('starlinkmodel.glb?v=7', (gltf) => {
+        gltfLoader.load('starlinkmodel.glb?v=18', (gltf) => {
             starlinkGLBModel = gltf.scene;
             // Pre-process the model
             const box = new THREE.Box3().setFromObject(starlinkGLBModel);

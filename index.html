@@ -141,6 +141,7 @@
         <button class="layer-btn" onclick="toggleLayer('iss')">ISS</button>
         <button class="layer-btn active" onclick="toggleLayer('moon')">Moon</button>
         <button class="layer-btn" onclick="toggleLayer('planets')">Planets</button>
+        <button class="layer-btn active" onclick="toggleLayer('highlight')">Model Highlight</button>
     </div>
     
     <div class="camera-dock">
@@ -290,7 +291,26 @@
                 const box = new THREE.Box3().setFromObject(model);
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
+                
+                // Add green highlight/outline effect
+                const highlightGroup = new THREE.Group();
+                highlightGroup.name = 'highlight';
+                
+                model.traverse((child) => {
+                    if(child.isMesh) {
+                        // Create outline mesh
+                        const outlineGeo = new THREE.EdgesGeometry(child.geometry);
+                        const outlineMat = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
+                        const outline = new THREE.LineSegments(outlineGeo, outlineMat);
+                        outline.scale.copy(child.scale);
+                        outline.position.copy(child.position);
+                        outline.rotation.copy(child.rotation);
+                        highlightGroup.add(outline);
+                    }
+                });
+                
                 artemisGroup.add(model);
+                artemisGroup.add(highlightGroup);
                 log('Artemis model loaded', 'artemis');
                 console.log('[MODEL] Size:', box.getSize(new THREE.Vector3()));
             }, undefined, (err) => {
@@ -484,6 +504,10 @@
                 if(layer === 'iss') issGroup.visible = !issGroup.visible;
                 if(layer === 'moon') moonGroup.visible = !moonGroup.visible;
                 if(layer === 'planets') planetsGroup.visible = !planetsGroup.visible;
+                if(layer === 'highlight') {
+                    const highlight = artemisGroup.getObjectByName('highlight');
+                    if(highlight) highlight.visible = !highlight.visible;
+                }
             };
             
             // ========== ANIMATION ==========

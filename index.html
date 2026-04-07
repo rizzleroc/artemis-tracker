@@ -285,12 +285,34 @@
             const loader = new THREE.GLTFLoader();
             loader.load('rootmodel.glb?v=7', (gltf) => {
                 const model = gltf.scene;
-                // Adjust scale based on model size - real model may need different scaling
-                model.scale.set(0.02, 0.02, 0.02);
-                // Center the model
+                
+                // Compute bounding box first to understand model size
                 const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
-                model.position.sub(center);
+                console.log('[MODEL] Original size:', size, 'Center:', center);
+                
+                // Adjust scale - model might be very large or very small
+                // Target size around 2-3 units in scene
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const targetSize = 3;
+                const scale = targetSize / maxDim;
+                model.scale.set(scale, scale, scale);
+                console.log('[MODEL] Applied scale:', scale);
+                
+                // Center the model
+                model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+                
+                // Ensure materials are visible
+                model.traverse((child) => {
+                    if(child.isMesh) {
+                        child.material.transparent = false;
+                        child.material.opacity = 1;
+                        child.material.side = THREE.DoubleSide;
+                        child.visible = true;
+                        console.log('[MODEL] Mesh:', child.name, 'Visible:', child.visible);
+                    }
+                });
                 
                 // Add green highlight/outline effect
                 const highlightGroup = new THREE.Group();
@@ -299,7 +321,6 @@
                 model.traverse((child) => {
                     if(child.isMesh && child.geometry) {
                         try {
-                            // Create outline mesh
                             const outlineGeo = new THREE.EdgesGeometry(child.geometry);
                             const outlineMat = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
                             const outline = new THREE.LineSegments(outlineGeo, outlineMat);
@@ -312,8 +333,7 @@
                 
                 artemisGroup.add(model);
                 artemisGroup.add(highlightGroup);
-                log('Artemis model loaded', 'artemis');
-                console.log('[MODEL] Size:', box.getSize(new THREE.Vector3()));
+                log('Artemis model loaded (scale: ' + scale.toFixed(3) + ')', 'artemis');
             }, undefined, (err) => {
                 // Fallback to primitive if model fails
                 const crew = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 32), whiteMat);

@@ -302,8 +302,12 @@
                     artemisGroup.add(p);
                 });
                 artemisGroup.scale.set(0.3, 0.3, 0.3);
+                artemisGroup.position.set(47, 1.5, 14);
                 log('Artemis fallback model created', 'data');
             });
+            
+            // Set initial Artemis position (will be updated by API)
+            artemisGroup.position.set(47, 1.5, 14);
             
             // ISS
             const issGroup = new THREE.Group();
@@ -439,10 +443,22 @@
                 cameraMode = mode;
                 
                 switch(mode) {
-                    case 'artemis': camera.position.set(52, 32, 94); controls.target.copy(artemisGroup.position); break;
-                    case 'moon': camera.position.set(75, 20, 40); controls.target.copy(moonGroup.position); break;
-                    case 'earth': camera.position.set(30, 20, 50); controls.target.set(0,0,0); break;
-                    case 'system': camera.position.set(100, 50, 100); controls.target.set(30,0,0); break;
+                    case 'artemis': 
+                        camera.position.set(artemisGroup.position.x + 15, artemisGroup.position.y + 8, artemisGroup.position.z + 15); 
+                        controls.target.copy(artemisGroup.position); 
+                        break;
+                    case 'moon': 
+                        camera.position.set(75, 20, 40); 
+                        controls.target.copy(moonGroup.position); 
+                        break;
+                    case 'earth': 
+                        camera.position.set(30, 20, 50); 
+                        controls.target.set(0,0,0); 
+                        break;
+                    case 'system': 
+                        camera.position.set(100, 50, 100); 
+                        controls.target.set(30,0,0); 
+                        break;
                 }
             };
             
@@ -507,27 +523,40 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
             
-            // Space Weather Data
+            // Space Weather Data - Using NOAA SWPC data
             async function fetchSpaceWeather() {
                 try {
-                    // NOAA Space Weather API (DONKI)
-                    const resp = await fetch('https://api.nasa.gov/DONKI/WSAEnlilSimulations?api_key=DEMO_KEY&startDate=2026-04-01');
+                    // Try to fetch real space weather data
+                    const resp = await fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json');
                     if(resp.ok) {
                         const data = await resp.json();
-                        if(data && data.length > 0) {
-                            const latest = data[data.length - 1];
-                            document.getElementById('solar-wind').textContent = (latest.solarWindSpeed || '--') + ' km/s';
+                        if(data && data.WindSpeed) {
+                            document.getElementById('solar-wind').textContent = Math.round(data.WindSpeed) + ' km/s';
+                        }
+                    } else {
+                        throw new Error('SWPC API unavailable');
+                    }
+                    
+                    // Kp index
+                    const kpResp = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-1-minute.json');
+                    if(kpResp.ok) {
+                        const kpData = await kpResp.json();
+                        if(kpData && kpData.length > 1) {
+                            const latest = kpData[kpData.length - 1];
+                            const kp = parseFloat(latest[1]);
+                            document.getElementById('kp-index').textContent = kp.toFixed(1);
+                            if(kp >= 5) {
+                                document.getElementById('kp-index').classList.add('alert');
+                                document.getElementById('weather-alert').textContent = 'STORM WARNING';
+                                document.getElementById('weather-alert').classList.add('warning');
+                            }
                         }
                     }
                     
-                    // Alternative: Use simple proxy or static values for demo
-                    document.getElementById('kp-index').textContent = '3';
-                    document.getElementById('proton-flux').textContent = '0.1 pfu';
-                    document.getElementById('xray-flux').textContent = 'A0.0';
-                    
                 } catch(e) {
-                    document.getElementById('kp-index').textContent = '3';
-                    document.getElementById('solar-wind').textContent = '450 km/s';
+                    // Fallback values
+                    document.getElementById('kp-index').textContent = '2.3';
+                    document.getElementById('solar-wind').textContent = '435 km/s';
                     document.getElementById('proton-flux').textContent = '<0.1 pfu';
                     document.getElementById('xray-flux').textContent = 'A0.0';
                 }

@@ -546,11 +546,11 @@
             p.position.set(x*1.4, -0.4, z*1.4);
             artemisFallback.add(p);
         });
-        artemisFallback.scale.set(0.3, 0.3, 0.3);
+        artemisFallback.scale.set(0.1, 0.1, 0.1);
         artemisGroup.add(artemisFallback);
         
         // Load Artemis GLB model
-        gltfLoader.load('rootmodel.glb?v=18', (gltf) => {
+        gltfLoader.load('rootmodel.glb?v=19', (gltf) => {
             artemisGroup.remove(artemisFallback);
             const artemisModel = gltf.scene;
             const box = new THREE.Box3().setFromObject(artemisModel);
@@ -558,8 +558,16 @@
             artemisModel.position.sub(center);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 3 / maxDim;
+            const scale = 1 / maxDim;
             artemisModel.scale.set(scale, scale, scale);
+            // Fix any green emission materials
+            artemisModel.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    if (child.material.emissive && child.material.emissive.g > 0.5) {
+                        child.material.emissive.setHex(0x000000);
+                    }
+                }
+            });
             artemisGroup.add(artemisModel);
             addLog('Artemis model loaded (GLB)', 'success');
         }, undefined, (err) => {
@@ -593,15 +601,16 @@
         issGroup.add(issMarker);
         
         // Load ISS GLB model
-        gltfLoader.load('issmodel.glb?v=18', (gltf) => {
+        gltfLoader.load('issmodel.glb?v=19', (gltf) => {
             issGroup.remove(issFallback);
+            issGroup.remove(issMarker); // Remove the red marker too
             const issModel = gltf.scene;
             const box = new THREE.Box3().setFromObject(issModel);
             const center = box.getCenter(new THREE.Vector3());
             issModel.position.sub(center);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 6 / maxDim;
+            const scale = 2 / maxDim;
             issModel.scale.set(scale, scale, scale);
             issModel.rotation.x = Math.PI / 2;
             issGroup.add(issModel);
@@ -629,33 +638,49 @@
         planetsGroup.visible = false;
         scene.add(planetsGroup);
 
-        // Starlink Satellites - Using InstancedMesh with GLB model
+        // Starlink Satellites
         const starlinkGroup = new THREE.Group();
         starlinkGroup.visible = false;
         scene.add(starlinkGroup);
         
-        // Starlink fallback geometry (small box)
-        const starlinkFallbackGeo = new THREE.BoxGeometry(0.3, 0.1, 0.2);
-        const starlinkFallbackMat = new THREE.MeshStandardMaterial({ color: 0x4488ff, metalness: 0.6, roughness: 0.4 });
-        const starlinkMaxCount = 200;
-        const starlinkMesh = new THREE.InstancedMesh(starlinkFallbackGeo, starlinkFallbackMat, starlinkMaxCount);
-        starlinkMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        starlinkGroup.add(starlinkMesh);
+        // Starlink satellite array - will hold individual meshes
+        const starlinkSatellites = [];
+        const starlinkMaxCount = 50;
         
-        // Load Starlink GLB model and create instanced version
-        let starlinkGLBModel = null;
-        gltfLoader.load('starlinkmodel.glb?v=18', (gltf) => {
-            starlinkGLBModel = gltf.scene;
+        // Create simple satellite geometry as placeholder
+        const satGeo = new THREE.BoxGeometry(0.15, 0.05, 0.1);
+        const satMat = new THREE.MeshStandardMaterial({ color: 0x6699ff, metalness: 0.5, roughness: 0.5 });
+        
+        // Load Starlink GLB model then create clones
+        gltfLoader.load('starlinkmodel.glb?v=19', (gltf) => {
+            const baseModel = gltf.scene;
             // Pre-process the model
-            const box = new THREE.Box3().setFromObject(starlinkGLBModel);
+            const box = new THREE.Box3().setFromObject(baseModel);
             const center = box.getCenter(new THREE.Vector3());
-            starlinkGLBModel.position.sub(center);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 0.5 / maxDim;
-            starlinkGLBModel.scale.set(scale, scale, scale);
-            addLog('Starlink model loaded (GLB)', 'success');
+            const scale = 0.3 / maxDim;
+            
+            // Store processed base model
+            baseModel.position.sub(center);
+            baseModel.scale.set(scale, scale, scale);
+            
+            // Create satellite pool
+            for (let i = 0; i < starlinkMaxCount; i++) {
+                const sat = baseModel.clone();
+                sat.visible = false;
+                starlinkGroup.add(sat);
+                starlinkSatellites.push(sat);
+            }
+            addLog('Starlink models ready (GLB)', 'success');
         }, undefined, (err) => {
+            // Fallback: create simple boxes
+            for (let i = 0; i < starlinkMaxCount; i++) {
+                const sat = new THREE.Mesh(satGeo, satMat);
+                sat.visible = false;
+                starlinkGroup.add(sat);
+                starlinkSatellites.push(sat);
+            }
             addLog('Starlink using procedural models', 'warn');
         });
 
@@ -776,27 +801,26 @@
             }
             
             // Starlink satellites
-            if (allData.starlink?.satellites) {
+            if (allData.starlink?.satellites && starlinkSatellites.length > 0) {
                 const sats = allData.starlink.satellites.slice(0, starlinkMaxCount);
-                const dummy = new THREE.Object3D();
                 
-                sats.forEach((sat, i) => {
-                    const phi = (90 - sat.latitude) * Math.PI / 180;
-                    const theta = (sat.longitude + 180) * Math.PI / 180;
-                    const r = 10 + (sat.altitude / EARTH_RADIUS_KM) * 10;
-                    
-                    dummy.position.set(
-                        r * Math.sin(phi) * Math.cos(theta),
-                        r * Math.cos(phi),
-                        r * Math.sin(phi) * Math.sin(theta)
-                    );
-                    dummy.rotation.set(0, 0, 0);
-                    dummy.updateMatrix();
-                    starlinkMesh.setMatrixAt(i, dummy.matrix);
+                starlinkSatellites.forEach((satMesh, i) => {
+                    if (i < sats.length) {
+                        const sat = sats[i];
+                        const phi = (90 - sat.latitude) * Math.PI / 180;
+                        const theta = (sat.longitude + 180) * Math.PI / 180;
+                        const r = 10 + (sat.altitude / EARTH_RADIUS_KM) * 10;
+                        
+                        satMesh.position.set(
+                            r * Math.sin(phi) * Math.cos(theta),
+                            r * Math.cos(phi),
+                            r * Math.sin(phi) * Math.sin(theta)
+                        );
+                        satMesh.visible = true;
+                    } else {
+                        satMesh.visible = false;
+                    }
                 });
-                
-                starlinkMesh.count = sats.length;
-                starlinkMesh.instanceMatrix.needsUpdate = true;
             }
         }
 

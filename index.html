@@ -139,9 +139,11 @@
         <button class="layer-btn active artemis-layer" onclick="toggleLayer('artemis')">Artemis II</button>
         <button class="layer-btn active" onclick="toggleLayer('trajectory')">Trajectory</button>
         <button class="layer-btn" onclick="toggleLayer('iss')">ISS</button>
+        <button class="layer-btn" onclick="toggleLayer('starlink')">Starlink</button>
         <button class="layer-btn active" onclick="toggleLayer('moon')">Moon</button>
         <button class="layer-btn" onclick="toggleLayer('planets')">Planets</button>
-        <button class="layer-btn active" onclick="toggleLayer('highlight')">Model Highlight</button>
+        <button class="layer-btn" onclick="toggleLayer('sun')">Sun</button>
+        <button class="layer-btn" onclick="toggleLayer('highlight')">Highlight</button>
     </div>
     
     <div class="camera-dock">
@@ -236,9 +238,49 @@
             
             // Lights
             scene.add(new THREE.AmbientLight(0x203040, 0.3));
+            
+            // Sun - visible object with glow
+            const sunGroup = new THREE.Group();
+            sunGroup.position.set(500, 200, 300);
+            scene.add(sunGroup);
+            
+            // Sun body
+            const sunGeo = new THREE.SphereGeometry(30, 64, 64);
+            const sunMat = new THREE.MeshBasicMaterial({ 
+                color: 0xfff8e8,
+                transparent: true
+            });
+            // Sun texture
+            textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun_atmos.jpg',
+                (tex) => { sunMat.map = tex; },
+                undefined,
+                () => { sunMat.color.setHex(0xfff8e8); }
+            );
+            sunGroup.add(new THREE.Mesh(sunGeo, sunMat));
+            
+            // Sun glow layers
+            const sunGlow1 = new THREE.Mesh(
+                new THREE.SphereGeometry(35, 32, 32),
+                new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.3, side: THREE.BackSide, blending: THREE.AdditiveBlending })
+            );
+            sunGroup.add(sunGlow1);
+            
+            const sunGlow2 = new THREE.Mesh(
+                new THREE.SphereGeometry(45, 32, 32),
+                new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.15, side: THREE.BackSide, blending: THREE.AdditiveBlending })
+            );
+            sunGroup.add(sunGlow2);
+            
+            // Sun light from sun position
             const sunLight = new THREE.DirectionalLight(0xfff8e8, 1.8);
-            sunLight.position.set(500, 200, 300);
-            scene.add(sunLight);
+            sunLight.position.set(0, 0, 0); // Relative to sunGroup
+            sunGroup.add(sunLight);
+            
+            // Point light for local illumination
+            const sunPointLight = new THREE.PointLight(0xfff8e8, 1.5, 2000);
+            sunGroup.add(sunPointLight);
+            
+            log('Sun created at (500, 200, 300)', 'data');
             
             // ========== CELESTIAL BODIES ==========
             const textureLoader = new THREE.TextureLoader();
@@ -446,21 +488,43 @@
             // Set initial Artemis position (will be updated by API)
             artemisGroup.position.set(47, 1.5, 14);
             
-            // ISS
+            // ISS - Load real GLB model
             const issGroup = new THREE.Group();
             issGroup.visible = false;
             scene.add(issGroup);
-            issGroup.add(new THREE.Mesh(new THREE.BoxGeometry(5, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
-            const issMod = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 16), whiteMat);
-            issMod.rotation.z = Math.PI/2;
-            issGroup.add(issMod);
-            const issSolar1 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
-            issSolar1.position.set(0, 0.6, 1.8);
-            issGroup.add(issSolar1);
-            const issSolar2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
-            issSolar2.position.set(0, 0.6, -1.8);
-            issGroup.add(issSolar2);
-            log('ISS created', 'data');
+            
+            loader.load('issmodel.glb?v=7', (gltf) => {
+                const issModel = gltf.scene;
+                // Scale appropriately for ISS
+                issModel.scale.set(0.01, 0.01, 0.01);
+                // Center
+                const box = new THREE.Box3().setFromObject(issModel);
+                const center = box.getCenter(new THREE.Vector3());
+                issModel.position.sub(center);
+                issGroup.add(issModel);
+                log('ISS model loaded', 'data');
+            }, undefined, (err) => {
+                // Fallback primitive
+                issGroup.add(new THREE.Mesh(new THREE.BoxGeometry(5, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
+                const issMod = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 16), whiteMat);
+                issMod.rotation.z = Math.PI/2;
+                issGroup.add(issMod);
+                const issSolar1 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
+                issSolar1.position.set(0, 0.6, 1.8);
+                issGroup.add(issSolar1);
+                const issSolar2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
+                issSolar2.position.set(0, 0.6, -1.8);
+                issGroup.add(issSolar2);
+                log('ISS fallback created', 'data');
+            });
+            
+            // Starlink satellites group
+            const starlinkGroup = new THREE.Group();
+            starlinkGroup.visible = false;
+            scene.add(starlinkGroup);
+            const starlinkSatellites = []; // Store individual satellites
+            
+            log('Satellite groups created', 'data');
             
             // Trajectory line - curved path from Earth to Moon
             const trajPoints = [];
@@ -551,17 +615,16 @@
             }
             
             function updatePositions() {
+                // Update Artemis
                 if(allData.artemis?.position) {
                     const x = allData.artemis.position.x * KM_TO_SCENE;
                     const y = allData.artemis.position.y * KM_TO_SCENE;
                     const z = allData.artemis.position.z * KM_TO_SCENE;
-                    artemisGroup.position.set(x, y, z);
+                    targetPosition.set(x, y, z);
                     artemisGroup.lookAt(0, 0, 0);
-                    console.log('[POSITION] Artemis:', {x, y, z}, 'Distance:', Math.sqrt(x*x + y*y + z*z).toFixed(1));
-                } else {
-                    console.log('[POSITION] No artemis data available');
                 }
                 
+                // Update ISS
                 if(allData.iss) {
                     const phi = (90 - allData.iss.latitude) * Math.PI / 180;
                     const theta = (allData.iss.longitude + 180) * Math.PI / 180;
@@ -573,6 +636,54 @@
                     );
                 }
                 
+                // Update Starlink satellites
+                if(allData.starlink?.satellites) {
+                    // Clear old satellites
+                    while(starlinkGroup.children.length) starlinkGroup.remove(starlinkGroup.children[0]);
+                    
+                    allData.starlink.satellites.forEach((sat, idx) => {
+                        // Create simplified satellite representation
+                        const satGroup = new THREE.Group();
+                        
+                        // Use GLB model for first few, primitives for rest (performance)
+                        if(idx < 5) {
+                            // Load Starlink model (throttled for performance)
+                            loader.load('starlinkmodel.glb?v=7', (gltf) => {
+                                const satModel = gltf.scene.clone();
+                                satModel.scale.set(0.005, 0.005, 0.005);
+                                satGroup.add(satModel);
+                            }, undefined, () => {
+                                // Fallback to primitive
+                                const satMesh = new THREE.Mesh(
+                                    new THREE.BoxGeometry(0.3, 0.05, 0.2),
+                                    new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                                );
+                                satGroup.add(satMesh);
+                            });
+                        } else {
+                            // Primitive for performance
+                            const satMesh = new THREE.Mesh(
+                                new THREE.BoxGeometry(0.3, 0.05, 0.2),
+                                new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                            );
+                            satGroup.add(satMesh);
+                        }
+                        
+                        // Position satellite
+                        const phi = (90 - sat.latitude) * Math.PI / 180;
+                        const theta = (sat.longitude + 180) * Math.PI / 180;
+                        const r = 10 + (sat.altitude / EARTH_RADIUS_KM) * 10;
+                        satGroup.position.set(
+                            r * Math.sin(phi) * Math.cos(theta),
+                            r * Math.cos(phi),
+                            r * Math.sin(phi) * Math.sin(theta)
+                        );
+                        
+                        starlinkGroup.add(satGroup);
+                    });
+                }
+                
+                // Update Planets
                 if(allData.planets?.planets) {
                     while(planetsGroup.children.length) planetsGroup.remove(planetsGroup.children[0]);
                     allData.planets.planets.forEach(p => {
@@ -622,8 +733,10 @@
                     if(traj) traj.visible = !traj.visible;
                 }
                 if(layer === 'iss') issGroup.visible = !issGroup.visible;
+                if(layer === 'starlink') starlinkGroup.visible = !starlinkGroup.visible;
                 if(layer === 'moon') moonGroup.visible = !moonGroup.visible;
                 if(layer === 'planets') planetsGroup.visible = !planetsGroup.visible;
+                if(layer === 'sun') sunGroup.visible = !sunGroup.visible;
                 if(layer === 'highlight') {
                     const highlight = artemisGroup.getObjectByName('highlight');
                     if(highlight) {

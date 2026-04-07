@@ -243,22 +243,109 @@
             // ========== CELESTIAL BODIES ==========
             const textureLoader = new THREE.TextureLoader();
             
-            // Earth Group
+            // Earth Group - Palantir Style HD
             const earthGroup = new THREE.Group();
             scene.add(earthGroup);
             
-            const earthMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.75 });
-            textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
-                (tex) => { earthMat.map = tex; },
-                undefined, () => { earthMat.color.setHex(0x1a3a5a); }
+            // High-res Earth with multiple texture maps
+            const earthGeometry = new THREE.SphereGeometry(10, 256, 256);
+            const earthMat = new THREE.MeshPhongMaterial({ 
+                color: 0xffffff,
+                shininess: 25,
+                specular: new THREE.Color(0x333333)
+            });
+            
+            // HD Blue Marble texture (NASA)
+            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+                (tex) => { 
+                    tex.anisotropy = 16;
+                    earthMat.map = tex; 
+                    earthMat.needsUpdate = true;
+                    log('Earth texture loaded (HD)', 'data');
+                },
+                undefined, 
+                () => { 
+                    // Fallback to standard texture
+                    textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
+                        (tex2) => { earthMat.map = tex2; },
+                        undefined,
+                        () => { earthMat.color.setHex(0x1a3a5a); }
+                    );
+                }
             );
             
-            earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(10, 128, 128), earthMat));
-            earthGroup.add(new THREE.Mesh(
-                new THREE.SphereGeometry(10.5, 64, 64),
-                new THREE.MeshBasicMaterial({ color: 0x6090c0, transparent: true, opacity: 0.12, side: THREE.BackSide, blending: THREE.AdditiveBlending })
-            ));
-            log('Earth created', 'data');
+            // Bump map for terrain detail
+            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-topology.png',
+                (tex) => { 
+                    tex.anisotropy = 16;
+                    earthMat.bumpMap = tex; 
+                    earthMat.bumpScale = 0.15;
+                },
+                undefined,
+                () => {}
+            );
+            
+            // Specular map for water reflection
+            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-water.png',
+                (tex) => { 
+                    tex.anisotropy = 16;
+                    earthMat.specularMap = tex; 
+                },
+                undefined,
+                () => {}
+            );
+            
+            earthGroup.add(new THREE.Mesh(earthGeometry, earthMat));
+            
+            // Atmosphere glow - Palantir style
+            const atmosGeo = new THREE.SphereGeometry(10.3, 128, 128);
+            const atmosMat = new THREE.MeshBasicMaterial({
+                color: 0x4090c0,
+                transparent: true,
+                opacity: 0.15,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending
+            });
+            const atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
+            atmosphere.name = 'atmosphere';
+            earthGroup.add(atmosphere);
+            
+            // Outer glow ring
+            const glowGeo = new THREE.SphereGeometry(10.8, 64, 64);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: 0x60a0d0,
+                transparent: true,
+                opacity: 0.08,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending
+            });
+            const glowRing = new THREE.Mesh(glowGeo, glowMat);
+            glowRing.name = 'glow';
+            earthGroup.add(glowRing);
+            
+            // Cloud layer
+            const cloudGeo = new THREE.SphereGeometry(10.15, 128, 128);
+            const cloudMat = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.4,
+                side: THREE.DoubleSide,
+                blending: THREE.NormalBlending
+            });
+            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-clouds.png',
+                (tex) => { 
+                    tex.anisotropy = 16;
+                    cloudMat.map = tex; 
+                    cloudMat.alphaMap = tex;
+                },
+                undefined,
+                () => {}
+            );
+            const cloudLayer = new THREE.Mesh(cloudGeo, cloudMat);
+            cloudLayer.name = 'clouds';
+            earthGroup.add(cloudLayer);
+            
+            log('Earth created (Palantir HD)', 'data');
             
             // Moon
             const moonGroup = new THREE.Group();
@@ -565,6 +652,10 @@
                 }
                 
                 earthGroup.rotation.y += 0.0002;
+                
+                // Rotate clouds slightly faster for parallax effect
+                const clouds = earthGroup.getObjectByName('clouds');
+                if(clouds) clouds.rotation.y += 0.00025;
                 
                 if(cameraMode === 'artemis') {
                     camera.position.copy(artemisGroup.position).add(new THREE.Vector3(5, 3, 5));

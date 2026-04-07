@@ -186,7 +186,7 @@
     
     <div class="video-panel hud-panel">
         <div class="hud-header">LIVE FEED</div>
-        <iframe width="280" height="157" src="https://www.youtube.com/embed/nx2Gd5FI7WE?si=ARTEMIS" title="NASA Live" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <iframe width="280" height="157" src="https://www.youtube.com/embed/21X5lGlDOfg?autoplay=0&mute=1" title="NASA TV Live" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
 
     <script>
@@ -380,13 +380,17 @@
             
             async function fetchData() {
                 try {
+                    log('Fetching telemetry...', 'data');
                     const resp = await fetch(`${API_BASE}?endpoint=all`);
                     allData = await resp.json();
+                    log('Telemetry received', 'data');
+                    console.log('[API] Data:', allData);
                     updateUI();
                     updatePositions();
                     document.getElementById('loading').classList.add('hidden');
                 } catch(e) {
-                    log('Telemetry lost', 'error');
+                    log('Telemetry lost: ' + e.message, 'error');
+                    console.error('[API] Error:', e);
                 }
             }
             
@@ -416,6 +420,9 @@
                     const z = allData.artemis.position.z * KM_TO_SCENE;
                     artemisGroup.position.set(x, y, z);
                     artemisGroup.lookAt(0, 0, 0);
+                    console.log('[POSITION] Artemis:', {x, y, z}, 'Distance:', Math.sqrt(x*x + y*y + z*z).toFixed(1));
+                } else {
+                    console.log('[POSITION] No artemis data available');
                 }
                 
                 if(allData.iss) {
@@ -546,11 +553,28 @@
             log('Moon positioned at (60, 0, 0)', 'data');
             document.getElementById('mission-phase').textContent = 'SYSTEM ONLINE';
             
+            // Initial data fetch
             fetchData();
-            setInterval(fetchData, 30000);
+            // Update telemetry every 5 seconds for more real-time feel
+            setInterval(fetchData, 5000);
             updateMET();
             fetchSpaceWeather();
             setInterval(fetchSpaceWeather, 60000);
+            
+            // Smooth animation interpolation
+            let targetPosition = new THREE.Vector3(47, 1.5, 14);
+            function animatePosition() {
+                if(allData.artemis?.position) {
+                    const x = allData.artemis.position.x * KM_TO_SCENE;
+                    const y = allData.artemis.position.y * KM_TO_SCENE;
+                    const z = allData.artemis.position.z * KM_TO_SCENE;
+                    targetPosition.set(x, y, z);
+                }
+                // Smoothly interpolate current position to target
+                artemisGroup.position.lerp(targetPosition, 0.05);
+                requestAnimationFrame(animatePosition);
+            }
+            animatePosition();
             
         } catch(e) {
             log('ERROR: ' + e.message, 'artemis');

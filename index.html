@@ -420,6 +420,8 @@
                 
                 artemisGroup.add(model);
                 artemisGroup.add(highlightGroup);
+                // Hide highlight by default - user must toggle it on
+                highlightGroup.visible = false;
                 log('Artemis model loaded (scale: ' + scale.toFixed(3) + ')', 'artemis');
             }, undefined, (err) => {
                 // Fallback to primitive if model fails
@@ -460,17 +462,24 @@
             issGroup.add(issSolar2);
             log('ISS created', 'data');
             
-            // Trajectory line
+            // Trajectory line - curved path from Earth to Moon
             const trajPoints = [];
             for(let i=0; i<=100; i++) {
                 const t = i/100;
-                const x = t * 65;
-                const y = Math.sin(t * Math.PI) * 8;
-                const z = Math.sin(t * Math.PI * 0.5) * 15;
+                // Arc trajectory
+                const x = t * 60;  // Distance to Moon
+                const y = Math.sin(t * Math.PI) * 15;  // Height arc
+                const z = Math.sin(t * Math.PI * 0.3) * 20;  // Side curve
                 trajPoints.push(new THREE.Vector3(x, y, z));
             }
             const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
-            const trajectoryLine = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ color: 0x70c0a0, transparent: true, opacity: 0.5 }));
+            const trajectoryLine = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ 
+                color: 0x70c0a0, 
+                transparent: true, 
+                opacity: 0.7,
+                linewidth: 2
+            }));
+            trajectoryLine.name = 'trajectoryLine';
             scene.add(trajectoryLine);
             log('Trajectory created', 'data');
             
@@ -608,13 +617,19 @@
             window.toggleLayer = function(layer) {
                 event.currentTarget.classList.toggle('active');
                 if(layer === 'artemis') artemisGroup.visible = !artemisGroup.visible;
-                if(layer === 'trajectory') trajectoryLine.visible = !trajectoryLine.visible;
+                if(layer === 'trajectory') {
+                    const traj = scene.getObjectByName('trajectoryLine');
+                    if(traj) traj.visible = !traj.visible;
+                }
                 if(layer === 'iss') issGroup.visible = !issGroup.visible;
                 if(layer === 'moon') moonGroup.visible = !moonGroup.visible;
                 if(layer === 'planets') planetsGroup.visible = !planetsGroup.visible;
                 if(layer === 'highlight') {
                     const highlight = artemisGroup.getObjectByName('highlight');
-                    if(highlight) highlight.visible = !highlight.visible;
+                    if(highlight) {
+                        highlight.visible = !highlight.visible;
+                        console.log('[HIGHLIGHT] Toggled:', highlight.visible);
+                    }
                 }
             };
             

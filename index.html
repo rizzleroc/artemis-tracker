@@ -527,26 +527,50 @@
             
             log('Satellite groups created', 'data');
             
-            // Trajectory line - curved path from Earth to Moon
+            // Trajectory line - FULL Artemis II free return trajectory (Earth -> Moon -> Earth)
             const trajPoints = [];
-            for(let i=0; i<=100; i++) {
-                const t = i/100;
-                // Arc trajectory
-                const x = t * 60;  // Distance to Moon
-                const y = Math.sin(t * Math.PI) * 15;  // Height arc
-                const z = Math.sin(t * Math.PI * 0.3) * 20;  // Side curve
+            
+            // Outbound leg: Earth to Moon (0 to 0.45)
+            for(let i=0; i<=45; i++) {
+                const t = i/45 * 0.45;  // 0 to 0.45
+                const x = t * 133;  // Extend past Moon for flyby
+                const y = Math.sin(t * Math.PI * 0.8) * 25;  // Arc up
+                const z = Math.sin(t * Math.PI * 0.4) * 35;  // Side curve
                 trajPoints.push(new THREE.Vector3(x, y, z));
             }
+            
+            // Loop around Moon (0.45 to 0.55) - the free return trajectory curve
+            for(let i=0; i<=20; i++) {
+                const t = i/20;  // 0 to 1 within this segment
+                const angle = t * Math.PI * 0.6 + Math.PI * 0.2;  // Arc around
+                const radius = 15;
+                const centerX = 60;  // Moon position
+                const centerZ = 15;
+                const x = centerX + Math.cos(angle) * radius;
+                const z = centerZ + Math.sin(angle) * radius;
+                const y = 25 - t * 5;  // Slight descent
+                trajPoints.push(new THREE.Vector3(x, y, z));
+            }
+            
+            // Return leg: Moon back to Earth (0.55 to 1.0)
+            for(let i=0; i<=45; i++) {
+                const t = i/45;  // 0 to 1 within this segment
+                const x = 75 - t * 75;  // Back to Earth
+                const y = 20 - Math.sin(t * Math.PI) * 20;  // Arc down
+                const z = 15 - t * 15;  // Return to center
+                trajPoints.push(new THREE.Vector3(x, y, z));
+            }
+            
             const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
             const trajectoryLine = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ 
                 color: 0x70c0a0, 
                 transparent: true, 
-                opacity: 0.7,
-                linewidth: 2
+                opacity: 0.8,
+                linewidth: 3
             }));
             trajectoryLine.name = 'trajectoryLine';
             scene.add(trajectoryLine);
-            log('Trajectory created', 'data');
+            log('Full trajectory loop created', 'data');
             
             // Planets group
             const planetsGroup = new THREE.Group();

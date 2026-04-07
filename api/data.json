@@ -7,14 +7,14 @@
   "source": "NASA JPL HORIZONS (ARTEMIS II)",
   "targetName": "OBJ: ORION EM-2",
   "position": {
-    "x": -114318,
-    "y": -348214,
-    "z": -37994
+    "x": -114306,
+    "y": -348219,
+    "z": -37988
   },
   "velocity": {
     "vx": -0.264,
     "vy": -0.648,
     "vz": -0.046
   },
-  "timestamp": "2026-04-07T20:05:07.081Z"
+  "timestamp": "2026-04-07T20:26:24.798Z"
 }

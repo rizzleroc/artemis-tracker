@@ -496,14 +496,22 @@
             
             loader.load('issmodel.glb?v=7', (gltf) => {
                 const issModel = gltf.scene;
-                // Scale appropriately for ISS
-                issModel.scale.set(0.01, 0.01, 0.01);
+                // Scale appropriately for ISS (larger to be visible)
+                issModel.scale.set(0.5, 0.5, 0.5);
                 // Center
                 const box = new THREE.Box3().setFromObject(issModel);
                 const center = box.getCenter(new THREE.Vector3());
                 issModel.position.sub(center);
+                
+                // Add a visible tracking marker
+                const markerGeo = new THREE.SphereGeometry(0.5, 16, 16);
+                const markerMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 });
+                const marker = new THREE.Mesh(markerGeo, markerMat);
+                marker.name = 'issMarker';
+                issGroup.add(marker);
+                
                 issGroup.add(issModel);
-                log('ISS model loaded', 'data');
+                log('ISS model loaded with marker', 'data');
             }, undefined, (err) => {
                 // Fallback primitive
                 issGroup.add(new THREE.Mesh(new THREE.BoxGeometry(5, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
@@ -664,8 +672,13 @@
                     console.log('[ISS] No data in API response');
                 }
                 
+                if(!allData.starlink?.satellites) {
+                    console.log('[STARLINK] No data in API response');
+                }
+                
                 // Update Starlink satellites
                 if(allData.starlink?.satellites) {
+                    console.log('[STARLINK] Satellites count:', allData.starlink.satellites.length);
                     // Clear old satellites
                     while(starlinkGroup.children.length) starlinkGroup.remove(starlinkGroup.children[0]);
                     

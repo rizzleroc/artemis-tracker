@@ -165,6 +165,10 @@
             <div class="status-label">DSN Signal</div>
             <div class="status-value" id="dsn-status">Goldstone</div>
         </div>
+        <div class="status-item">
+            <div class="status-label">Active Satellites</div>
+            <div class="status-value" id="sat-count">0</div>
+        </div>
     </div>
     
     <div class="weather-panel hud-panel">
@@ -917,27 +921,24 @@
             // Satellite tracking via CelesTrak/GP data
             async function fetchSatellitePositions() {
                 try {
-                    // Fetch TLE data and convert to positions
-                    // For demo, we'll use simulated orbital positions
                     const time = Date.now() / 1000;
+                    let totalSatellites = 0;
                     
                     Object.keys(SATELLITE_CATALOGS).forEach(key => {
                         const catalog = SATELLITE_CATALOGS[key];
                         const group = satelliteGroups[key];
                         const mesh = group.getObjectByName(key + 'Mesh');
                         
-                        if(mesh) {
+                        if(mesh && group.visible) {
                             const dummy = new THREE.Object3D();
                             
                             catalog.ids.forEach((id, idx) => {
-                                // Simulate orbital position based on satellite ID
                                 const seed = id * 0.001;
-                                const period = 5400 + (id % 3600); // ~90-150 min orbit
+                                const period = 5400 + (id % 3600);
                                 const inclination = (id % 60) * Math.PI / 180;
                                 
-                                // Orbital position
                                 const angle = (time / period + seed) * Math.PI * 2;
-                                const altitude = 550 + (id % 100); // km
+                                const altitude = 550 + (id % 100);
                                 const r = 10 + (altitude / EARTH_RADIUS_KM) * 10;
                                 
                                 const x = r * Math.cos(angle) * Math.cos(inclination);
@@ -951,8 +952,12 @@
                             });
                             
                             mesh.instanceMatrix.needsUpdate = true;
+                            totalSatellites += catalog.ids.length;
                         }
                     });
+                    
+                    // Update satellite counter
+                    document.getElementById('sat-count').textContent = totalSatellites.toLocaleString();
                     
                 } catch(e) {
                     console.error('[SATELLITES] Error:', e);

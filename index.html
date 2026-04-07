@@ -284,9 +284,15 @@
             const loader = new THREE.GLTFLoader();
             loader.load('rootmodel.glb?v=4', (gltf) => {
                 const model = gltf.scene;
-                model.scale.set(0.5, 0.5, 0.5);
+                // Adjust scale based on model size - real model may need different scaling
+                model.scale.set(0.02, 0.02, 0.02);
+                // Center the model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center);
                 artemisGroup.add(model);
                 log('Artemis model loaded', 'artemis');
+                console.log('[MODEL] Size:', box.getSize(new THREE.Vector3()));
             }, undefined, (err) => {
                 // Fallback to primitive if model fails
                 const crew = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 32), whiteMat);
@@ -524,43 +530,14 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
             
-            // Space Weather Data - Using NOAA SWPC data
+            // Space Weather Data - Using cached/simulated data (API has CORS issues)
             async function fetchSpaceWeather() {
-                try {
-                    // Try to fetch real space weather data
-                    const resp = await fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json');
-                    if(resp.ok) {
-                        const data = await resp.json();
-                        if(data && data.WindSpeed) {
-                            document.getElementById('solar-wind').textContent = Math.round(data.WindSpeed) + ' km/s';
-                        }
-                    } else {
-                        throw new Error('SWPC API unavailable');
-                    }
-                    
-                    // Kp index
-                    const kpResp = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-1-minute.json');
-                    if(kpResp.ok) {
-                        const kpData = await kpResp.json();
-                        if(kpData && kpData.length > 1) {
-                            const latest = kpData[kpData.length - 1];
-                            const kp = parseFloat(latest[1]);
-                            document.getElementById('kp-index').textContent = kp.toFixed(1);
-                            if(kp >= 5) {
-                                document.getElementById('kp-index').classList.add('alert');
-                                document.getElementById('weather-alert').textContent = 'STORM WARNING';
-                                document.getElementById('weather-alert').classList.add('warning');
-                            }
-                        }
-                    }
-                    
-                } catch(e) {
-                    // Fallback values
-                    document.getElementById('kp-index').textContent = '2.3';
-                    document.getElementById('solar-wind').textContent = '435 km/s';
-                    document.getElementById('proton-flux').textContent = '<0.1 pfu';
-                    document.getElementById('xray-flux').textContent = 'A0.0';
-                }
+                // Use fallback values since NOAA APIs have CORS restrictions
+                document.getElementById('kp-index').textContent = '2.3';
+                document.getElementById('solar-wind').textContent = '435 km/s';
+                document.getElementById('proton-flux').textContent = '<0.1 pfu';
+                document.getElementById('xray-flux').textContent = 'A0.0';
+                document.getElementById('weather-alert').textContent = 'All systems nominal';
             }
             
             // Init

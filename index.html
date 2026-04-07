@@ -250,12 +250,6 @@
                 color: 0xfff8e8,
                 transparent: true
             });
-            // Sun texture
-            textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun_atmos.jpg',
-                (tex) => { sunMat.map = tex; },
-                undefined,
-                () => { sunMat.color.setHex(0xfff8e8); }
-            );
             sunGroup.add(new THREE.Mesh(sunGeo, sunMat));
             
             // Sun glow layers
@@ -284,6 +278,13 @@
             
             // ========== CELESTIAL BODIES ==========
             const textureLoader = new THREE.TextureLoader();
+            
+            // Load Sun texture (now that textureLoader is defined)
+            textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun_atmos.jpg',
+                (tex) => { sunMat.map = tex; },
+                undefined,
+                () => { sunMat.color.setHex(0xfff8e8); }
+            );
             
             // Earth Group - Palantir Style HD
             const earthGroup = new THREE.Group();

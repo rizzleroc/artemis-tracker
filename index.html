@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <meta name="version" content="7">
-    <title>ORBITAL COMMAND // ARTEMIS II v4</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <title>ORBITAL COMMAND // ARTEMIS II</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         :root {
             --palantir-bg: #0a0c10;
             --palantir-panel: rgba(15, 20, 30, 0.92);
@@ -23,64 +27,317 @@
             --palantir-text: #a8c0d8;
             --palantir-dim: #5a7088;
         }
-        body { background: var(--palantir-bg); color: var(--palantir-text); font-family: 'Rajdhani', sans-serif; overflow: hidden; font-size: 12px; }
-        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px); pointer-events: none; z-index: 1000; opacity: 0.6; }
-        .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%); pointer-events: none; z-index: 1001; }
-        .hud-panel { background: var(--palantir-panel); border: 1px solid var(--palantir-border); backdrop-filter: blur(20px); box-shadow: 0 0 40px rgba(0,0,0,0.5); }
-        .hud-header { background: linear-gradient(90deg, rgba(64,144,192,0.3), transparent); border-bottom: 1px solid var(--palantir-border); padding: 10px 14px; font-weight: 600; letter-spacing: 3px; font-size: 10px; text-transform: uppercase; color: var(--palantir-accent); }
-        .mission-clock { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: var(--palantir-panel); border: 1px solid var(--palantir-artemis); padding: 14px 40px; z-index: 200; text-align: center; box-shadow: 0 0 30px rgba(201,160,80,0.2); }
-        .mission-clock .label { font-size: 9px; color: var(--palantir-dim); letter-spacing: 4px; }
-        .mission-clock .time { font-family: 'Rajdhani', monospace; font-size: 32px; font-weight: 700; color: var(--palantir-artemis); text-shadow: 0 0 20px rgba(201,160,80,0.4); letter-spacing: 2px; }
-        .mission-clock .phase { font-size: 11px; color: #70c0a0; margin-top: 4px; letter-spacing: 2px; }
-        .primary-panel { position: fixed; left: 24px; top: 100px; width: 280px; z-index: 100; }
-        .metric { padding: 14px 16px; border-bottom: 1px solid rgba(80,120,160,0.15); }
+        
+        body { 
+            background: var(--palantir-bg); 
+            color: var(--palantir-text); 
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            font-size: 12px;
+        }
+        
+        #canvas-container { 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            z-index: 1;
+        }
+        
+        /* Palantir scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.15),
+                rgba(0,0,0,0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.6;
+        }
+        
+        /* Vignette */
+        .vignette {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 1001;
+        }
+        
+        .hud-panel {
+            background: var(--palantir-panel);
+            border: 1px solid var(--palantir-border);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
+        
+        .hud-header {
+            background: linear-gradient(90deg, rgba(64,144,192,0.3), transparent);
+            border-bottom: 1px solid var(--palantir-border);
+            padding: 10px 14px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--palantir-accent);
+        }
+        
+        /* Mission Clock - Top Center */
+        .mission-clock {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--palantir-panel);
+            border: 1px solid var(--palantir-artemis);
+            padding: 14px 40px;
+            z-index: 200;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(201,160,80,0.2);
+        }
+        .mission-clock .label {
+            font-size: 9px;
+            color: var(--palantir-dim);
+            letter-spacing: 4px;
+        }
+        .mission-clock .time {
+            font-family: 'Rajdhani', monospace;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--palantir-artemis);
+            text-shadow: 0 0 20px rgba(201,160,80,0.4);
+            letter-spacing: 2px;
+        }
+        .mission-clock .phase {
+            font-size: 11px;
+            color: #70c0a0;
+            margin-top: 4px;
+            letter-spacing: 2px;
+        }
+        
+        /* Left Panel - Primary Telemetry */
+        .primary-panel {
+            position: fixed;
+            left: 24px;
+            top: 100px;
+            width: 280px;
+            z-index: 100;
+        }
+        
+        .metric { 
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(80,120,160,0.15);
+        }
         .metric:last-child { border-bottom: none; }
-        .metric-label { color: var(--palantir-dim); font-size: 9px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
-        .metric-value { color: #fff; font-size: 22px; font-weight: 600; font-family: 'Rajdhani', monospace; letter-spacing: 1px; }
-        .metric-value.artemis { color: var(--palantir-artemis); text-shadow: 0 0 15px rgba(201,160,80,0.3); }
+        .metric-label { 
+            color: var(--palantir-dim); 
+            font-size: 9px; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .metric-value { 
+            color: #fff; 
+            font-size: 22px; 
+            font-weight: 600;
+            font-family: 'Rajdhani', monospace;
+            letter-spacing: 1px;
+        }
+        .metric-value.artemis { 
+            color: var(--palantir-artemis); 
+            text-shadow: 0 0 15px rgba(201,160,80,0.3); 
+        }
         .metric-value.alert { color: #e06060; }
-        .timeline { padding: 16px; border-top: 1px solid rgba(80,120,160,0.15); }
-        .timeline-item { display: flex; align-items: center; padding: 8px 0; font-size: 11px; position: relative; padding-left: 20px; }
-        .timeline-item::before { content: ''; position: absolute; left: 0; width: 10px; height: 10px; border: 2px solid var(--palantir-dim); border-radius: 50%; }
-        .timeline-item.completed::before { background: #50a080; border-color: #50a080; }
-        .timeline-item.active::before { background: var(--palantir-artemis); border-color: var(--palantir-artemis); box-shadow: 0 0 12px var(--palantir-artemis); }
-        .timeline-time { width: 70px; color: var(--palantir-dim); font-family: monospace; }
-        .timeline-event { flex: 1; color: var(--palantir-text); }
-        .timeline-item.active .timeline-event { color: var(--palantir-artemis); font-weight: 600; }
-        .layer-panel { position: fixed; top: 100px; right: 24px; z-index: 200; width: 180px; }
-        .layer-btn { background: transparent; border: 1px solid var(--palantir-border); border-left: 3px solid var(--palantir-border); color: var(--palantir-dim); padding: 12px 16px; font-family: 'Rajdhani', sans-serif; font-size: 11px; cursor: pointer; transition: all 0.2s; width: 100%; text-align: left; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
-        .layer-btn:hover { border-color: var(--palantir-accent); color: var(--palantir-text); }
-        .layer-btn.active { background: rgba(64,144,192,0.1); border-left-color: var(--palantir-accent); color: #fff; }
-        .layer-btn.active.artemis-layer { border-left-color: var(--palantir-artemis); background: rgba(201,160,80,0.1); }
-        .camera-dock { position: fixed; bottom: 24px; left: 24px; z-index: 200; display: flex; gap: 8px; }
-        .view-btn { background: var(--palantir-panel); border: 1px solid var(--palantir-border); color: var(--palantir-dim); padding: 10px 20px; font-family: 'Rajdhani', sans-serif; font-size: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
-        .view-btn:hover { border-color: var(--palantir-accent); color: var(--palantir-text); }
-        .view-btn.active { background: rgba(201,160,80,0.15); border-color: var(--palantir-artemis); color: var(--palantir-artemis); }
-        .status-panel { position: fixed; bottom: 24px; right: 24px; z-index: 200; text-align: right; }
-        .status-item { background: var(--palantir-panel); border-right: 3px solid var(--palantir-accent); padding: 12px 20px; margin-bottom: 8px; }
-        .status-label { font-size: 9px; color: var(--palantir-dim); letter-spacing: 2px; text-transform: uppercase; }
-        .status-value { font-family: 'Rajdhani', monospace; font-size: 18px; color: #fff; margin-top: 4px; }
+        
+        /* Timeline */
+        .timeline {
+            padding: 16px;
+            border-top: 1px solid rgba(80,120,160,0.15);
+        }
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 11px;
+            position: relative;
+            padding-left: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 10px; height: 10px;
+            border: 2px solid var(--palantir-dim);
+            border-radius: 50%;
+        }
+        .timeline-item.completed::before {
+            background: #50a080;
+            border-color: #50a080;
+        }
+        .timeline-item.active::before {
+            background: var(--palantir-artemis);
+            border-color: var(--palantir-artemis);
+            box-shadow: 0 0 12px var(--palantir-artemis);
+        }
+        .timeline-time { 
+            width: 70px; 
+            color: var(--palantir-dim); 
+            font-family: monospace;
+        }
+        .timeline-event { 
+            flex: 1; 
+            color: var(--palantir-text); 
+        }
+        .timeline-item.active .timeline-event { 
+            color: var(--palantir-artemis); 
+            font-weight: 600; 
+        }
+        
+        /* Right Panel - Layer Controls */
+        .layer-panel {
+            position: fixed;
+            top: 100px;
+            right: 24px;
+            z-index: 200;
+            width: 180px;
+        }
+        .layer-btn {
+            background: transparent;
+            border: 1px solid var(--palantir-border);
+            border-left: 3px solid var(--palantir-border);
+            color: var(--palantir-dim);
+            padding: 12px 16px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .layer-btn:hover { 
+            border-color: var(--palantir-accent);
+            color: var(--palantir-text);
+        }
+        .layer-btn.active {
+            background: rgba(64,144,192,0.1);
+            border-left-color: var(--palantir-accent);
+            color: #fff;
+        }
+        .layer-btn.active.artemis-layer {
+            border-left-color: var(--palantir-artemis);
+            background: rgba(201,160,80,0.1);
+        }
+        
+        /* Bottom Controls */
+        .camera-dock {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            z-index: 200;
+            display: flex;
+            gap: 8px;
+        }
+        .view-btn {
+            background: var(--palantir-panel);
+            border: 1px solid var(--palantir-border);
+            color: var(--palantir-dim);
+            padding: 10px 20px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 10px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        .view-btn:hover { 
+            border-color: var(--palantir-accent);
+            color: var(--palantir-text);
+        }
+        .view-btn.active { 
+            background: rgba(201,160,80,0.15);
+            border-color: var(--palantir-artemis);
+            color: var(--palantir-artemis);
+        }
+        
+        /* Status - Bottom Right */
+        .status-panel {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 200;
+            text-align: right;
+        }
+        .status-item {
+            background: var(--palantir-panel);
+            border-right: 3px solid var(--palantir-accent);
+            padding: 12px 20px;
+            margin-bottom: 8px;
+        }
+        .status-label { 
+            font-size: 9px; 
+            color: var(--palantir-dim); 
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .status-value { 
+            font-family: 'Rajdhani', monospace;
+            font-size: 18px; 
+            color: #fff;
+            margin-top: 4px;
+        }
         .status-value.burn { color: #70c0a0; }
-        .log-panel { position: fixed; left: 24px; bottom: 320px; width: 280px; z-index: 100; }
-        .video-panel { position: fixed; left: 24px; bottom: 100px; width: 280px; z-index: 100; }
-        .video-panel iframe { width: 100%; height: 157px; border: none; }
-        .weather-panel { position: fixed; right: 24px; bottom: 100px; width: 220px; z-index: 200; }
-        .weather-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid rgba(80,120,160,0.15); font-size: 11px; }
-        .weather-item:last-child { border-bottom: none; }
-        .weather-label { color: var(--palantir-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .weather-value { color: #70c0a0; font-family: 'Rajdhani', monospace; }
-        .weather-value.alert { color: #e06060; }
-        .weather-alert { padding: 10px 12px; font-size: 10px; color: var(--palantir-dim); border-top: 1px solid rgba(80,120,160,0.15); text-align: center; }
-        .weather-alert.warning { color: #e06060; background: rgba(224,96,96,0.1); }
-        #log { padding: 12px; font-family: monospace; font-size: 10px; color: var(--palantir-dim); max-height: 120px; overflow-y: auto; }
-        .log-entry { margin-bottom: 4px; padding-left: 10px; border-left: 2px solid var(--palantir-border); }
+        
+        /* Log */
+        .log-panel {
+            position: fixed;
+            left: 24px;
+            bottom: 100px;
+            width: 280px;
+            z-index: 100;
+        }
+        #log { 
+            padding: 12px; 
+            font-family: monospace;
+            font-size: 10px; 
+            color: var(--palantir-dim);
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .log-entry { 
+            margin-bottom: 4px; 
+            padding-left: 10px; 
+            border-left: 2px solid var(--palantir-border);
+        }
         .log-entry.artemis { border-left-color: var(--palantir-artemis); color: var(--palantir-artemis); }
         .log-entry.data { border-left-color: #50a080; color: #70c0a0; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--palantir-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5000; transition: opacity 0.5s; }
+        
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--palantir-bg);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 5000;
+            transition: opacity 0.5s;
+        }
         .loading-overlay.hidden { opacity: 0; pointer-events: none; }
-        .loader { width: 60px; height: 60px; border: 2px solid var(--palantir-border); border-top-color: var(--palantir-artemis); border-radius: 50%; animation: spin 1.5s linear infinite; }
+        .loader {
+            width: 60px; height: 60px;
+            border: 2px solid var(--palantir-border);
+            border-top-color: var(--palantir-artemis);
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
         ::-webkit-scrollbar { width: 2px; }
         ::-webkit-scrollbar-thumb { background: var(--palantir-border); }
     </style>
@@ -95,12 +352,14 @@
         <div style="margin-top: 24px; color: var(--palantir-artemis); font-size: 12px; letter-spacing: 6px;">ORBITAL COMMAND</div>
     </div>
     
+    <!-- Mission Clock -->
     <div class="mission-clock">
         <div class="label">MISSION ELAPSED TIME</div>
-        <div class="time" id="met">T+00 00:00:00</div>
-        <div class="phase" id="mission-phase">INITIALIZING...</div>
+        <div class="time" id="met">T+03 12:45:00</div>
+        <div class="phase" id="mission-phase">LUNAR FLYBY</div>
     </div>
     
+    <!-- Left: Primary Telemetry -->
     <div class="primary-panel hud-panel">
         <div class="hud-header">ARTEMIS II TELEMETRY</div>
         <div class="metric">
@@ -130,25 +389,23 @@
         </div>
     </div>
     
+    <!-- Log -->
     <div class="log-panel hud-panel">
         <div class="hud-header">SYSTEM LOG</div>
         <div id="log"></div>
     </div>
     
+    <!-- Right: Layer Controls -->
     <div class="layer-panel">
         <button class="layer-btn active artemis-layer" onclick="toggleLayer('artemis')">Artemis II</button>
         <button class="layer-btn active" onclick="toggleLayer('trajectory')">Trajectory</button>
-        <button class="layer-btn active" onclick="toggleLayer('iss')">ISS</button>
-        <button class="layer-btn active" onclick="toggleLayer('starlink')">Starlink</button>
-        <button class="layer-btn" onclick="toggleLayer('gps')">GPS</button>
-        <button class="layer-btn" onclick="toggleLayer('weather')">Weather</button>
-        <button class="layer-btn" onclick="toggleLayer('communication')">Comms</button>
+        <button class="layer-btn" onclick="toggleLayer('iss')">ISS</button>
         <button class="layer-btn active" onclick="toggleLayer('moon')">Moon</button>
         <button class="layer-btn" onclick="toggleLayer('planets')">Planets</button>
-        <button class="layer-btn active" onclick="toggleLayer('sun')">Sun</button>
-        <button class="layer-btn" onclick="toggleLayer('highlight')">Highlight</button>
+        <button class="layer-btn" onclick="toggleLayer('starlink')">Starlink</button>
     </div>
     
+    <!-- Bottom: Camera Controls -->
     <div class="camera-dock">
         <button class="view-btn active" onclick="setCamera('artemis')">Chase</button>
         <button class="view-btn" onclick="setCamera('moon')">Lunar</button>
@@ -156,6 +413,7 @@
         <button class="view-btn" onclick="setCamera('system')">System</button>
     </div>
     
+    <!-- Status -->
     <div class="status-panel">
         <div class="status-item">
             <div class="status-label">Next Burn</div>
@@ -165,855 +423,490 @@
             <div class="status-label">DSN Signal</div>
             <div class="status-value" id="dsn-status">Goldstone</div>
         </div>
-        <div class="status-item">
-            <div class="status-label">Active Satellites</div>
-            <div class="status-value" id="sat-count">0</div>
-        </div>
-    </div>
-    
-    <div class="weather-panel hud-panel">
-        <div class="hud-header">CISLUNAR SPACE WEATHER</div>
-        <div id="space-weather">
-            <div class="weather-item">
-                <span class="weather-label">Kp Index</span>
-                <span class="weather-value" id="kp-index">--</span>
-            </div>
-            <div class="weather-item">
-                <span class="weather-label">Solar Wind</span>
-                <span class="weather-value" id="solar-wind">-- km/s</span>
-            </div>
-            <div class="weather-item">
-                <span class="weather-label">Proton Flux</span>
-                <span class="weather-value" id="proton-flux">-- pfu</span>
-            </div>
-            <div class="weather-item">
-                <span class="weather-label">X-Ray Flux</span>
-                <span class="weather-value" id="xray-flux">-- W/m²</span>
-            </div>
-            <div class="weather-alert" id="weather-alert">All systems nominal</div>
-        </div>
-    </div>
-    
-    <div class="video-panel hud-panel">
-        <div class="hud-header">LIVE FEED</div>
-        <iframe width="280" height="157" src="https://www.youtube.com/embed/m3kR2KK8TEs?autoplay=1&mute=0&enablejsapi=1" title="NASA Live Stream" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
 
-    <script>
-        console.log('[APP] Starting Artemis Tracker - Palantir Edition');
-        const logEl = document.getElementById('log');
-        function log(msg, type='info') {
-            console.log('[Artemis]', msg);
-            const entry = document.createElement('div');
-            entry.className = 'log-entry ' + type;
-            entry.textContent = msg;
-            logEl.appendChild(entry);
-            logEl.scrollTop = logEl.scrollHeight;
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        const API_BASE = 'https://kimicode.vercel.app/api';
+        
+        // ========== LAYER STATE ==========
+        const layers = { artemis: true, trajectory: true, iss: false, moon: true, planets: false, starlink: false };
+        
+        window.toggleLayer = function(layer) {
+            layers[layer] = !layers[layer];
+            event.currentTarget.classList.toggle('active');
+            if (layer === 'artemis') event.currentTarget.classList.toggle('artemis-layer');
+            updateVisibility();
+        };
+        
+        function updateVisibility() {
+            artemisGroup.visible = layers.artemis;
+            trajectoryLine.visible = layers.trajectory;
+            issGroup.visible = layers.iss;
+            moonGroup.visible = layers.moon;
+            planetsGroup.visible = layers.planets;
+            starlinkGroup.visible = layers.starlink;
         }
         
-        const API_BASE = 'https://kimicode.vercel.app/api';
+        // ========== SCENE ==========
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0c10);
+        scene.fog = new THREE.FogExp2(0x0a0c10, 0.00002);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+        camera.position.set(50, 30, 80);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.4, 0.9));
+
+        // ========== LIGHTING ==========
+        scene.add(new THREE.AmbientLight(0x203040, 0.3));
+        const sunLight = new THREE.DirectionalLight(0xfff8e8, 1.8);
+        sunLight.position.set(500, 200, 300);
+        scene.add(sunLight);
+
+        // ========== CONTROLS ==========
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 12;
+        controls.maxDistance = 5000;
+        controls.enablePan = true;
+        controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+
+        // ========== CELESTIAL ==========
+        const textureLoader = new THREE.TextureLoader();
+        
+        // Earth - Blue Marble
+        const earthGroup = new THREE.Group();
+        scene.add(earthGroup);
+        
+        const earthMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.75 });
+        textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
+            (tex) => { earthMat.map = tex; },
+            undefined, () => { earthMat.color.setHex(0x1a3a5a); }
+        );
+        
+        earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(10, 128, 128), earthMat));
+        earthGroup.add(new THREE.Mesh(
+            new THREE.SphereGeometry(10.5, 64, 64),
+            new THREE.MeshBasicMaterial({ color: 0x6090c0, transparent: true, opacity: 0.12, side: THREE.BackSide, blending: THREE.AdditiveBlending })
+        ));
+
+        // Moon
+        const moonGroup = new THREE.Group();
+        scene.add(moonGroup);
+        
+        const moonMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.1, roughness: 0.9 });
+        textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
+            (tex) => { moonMat.map = tex; },
+            undefined, () => {}
+        );
+        moonGroup.add(new THREE.Mesh(new THREE.SphereGeometry(2.7, 64, 64), moonMat));
+
+        // ========== CORRECT SCALE ==========
+        // Moon orbit: 384,400 km average = 60 units in scene
         const KM_TO_SCENE = 60 / 384400;
         const EARTH_RADIUS_KM = 6371;
         
-        try {
-            log('Three.js r' + THREE.REVISION + ' loaded', 'artemis');
+        // Position Moon correctly
+        moonGroup.position.set(60, 0, 0);
+
+        // Artemis - Procedural fallback + GLB loader
+        const artemisGroup = new THREE.Group();
+        scene.add(artemisGroup);
+        
+        const whiteMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, metalness: 0.7, roughness: 0.3 });
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a050, metalness: 0.8, roughness: 0.3 });
+        const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a3050, metalness: 0.3, roughness: 0.4 });
+        
+        // Procedural Artemis fallback
+        const artemisFallback = new THREE.Group();
+        const crew = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 32), whiteMat);
+        crew.position.y = 0.5;
+        artemisFallback.add(crew);
+        const service = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1.0, 32), goldMat);
+        service.position.y = -0.5;
+        artemisFallback.add(service);
+        [[1,0],[-1,0],[0,1],[0,-1]].forEach(([x,z]) => {
+            const p = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.03, 0.6), solarMat);
+            p.position.set(x*1.4, -0.4, z*1.4);
+            artemisFallback.add(p);
+        });
+        artemisFallback.scale.set(0.3, 0.3, 0.3);
+        artemisGroup.add(artemisFallback);
+        
+        // Load Artemis GLB model
+        gltfLoader.load('rootmodel.glb?v=7', (gltf) => {
+            artemisGroup.remove(artemisFallback);
+            const artemisModel = gltf.scene;
+            const box = new THREE.Box3().setFromObject(artemisModel);
+            const center = box.getCenter(new THREE.Vector3());
+            artemisModel.position.sub(center);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 3 / maxDim;
+            artemisModel.scale.set(scale, scale, scale);
+            artemisGroup.add(artemisModel);
+            addLog('Artemis model loaded (GLB)', 'success');
+        }, undefined, (err) => {
+            addLog('Artemis using procedural model', 'warn');
+        });
+
+        // ISS - Procedural fallback + GLB loader
+        const issGroup = new THREE.Group();
+        issGroup.visible = false;
+        scene.add(issGroup);
+        
+        // Procedural ISS fallback
+        const issFallback = new THREE.Group();
+        issFallback.add(new THREE.Mesh(new THREE.BoxGeometry(5, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
+        const issMod = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 16), whiteMat);
+        issMod.rotation.z = Math.PI/2;
+        issFallback.add(issMod);
+        const issSolar1 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
+        issSolar1.position.set(0, 0.6, 1.8);
+        issFallback.add(issSolar1);
+        const issSolar2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
+        issSolar2.position.set(0, 0.6, -1.8);
+        issFallback.add(issSolar2);
+        issGroup.add(issFallback);
+        
+        // ISS Red marker for visibility
+        const issMarker = new THREE.Mesh(
+            new THREE.SphereGeometry(0.5, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.4 })
+        );
+        issGroup.add(issMarker);
+        
+        // Load ISS GLB model
+        gltfLoader.load('issmodel.glb?v=7', (gltf) => {
+            issGroup.remove(issFallback);
+            const issModel = gltf.scene;
+            const box = new THREE.Box3().setFromObject(issModel);
+            const center = box.getCenter(new THREE.Vector3());
+            issModel.position.sub(center);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 6 / maxDim;
+            issModel.scale.set(scale, scale, scale);
+            issModel.rotation.x = Math.PI / 2;
+            issGroup.add(issModel);
+            addLog('ISS model loaded (GLB)', 'success');
+        }, undefined, (err) => {
+            addLog('ISS using procedural model', 'warn');
+        });
+
+        // Trajectory line - shows path from Earth to Moon
+        const trajPoints = [];
+        for (let i = 0; i <= 100; i++) {
+            const t = i / 100;
+            // Simple arc from Earth (0,0,0) toward Moon (60,0,0)
+            const x = t * 65; // Go slightly past Moon
+            const y = Math.sin(t * Math.PI) * 8; // Arc up
+            const z = Math.sin(t * Math.PI * 0.5) * 15; // Curve sideways
+            trajPoints.push(new THREE.Vector3(x, y, z));
+        }
+        const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
+        const trajectoryLine = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ color: 0x70c0a0, transparent: true, opacity: 0.5 }));
+        scene.add(trajectoryLine);
+
+        // Planets
+        const planetsGroup = new THREE.Group();
+        planetsGroup.visible = false;
+        scene.add(planetsGroup);
+
+        // Starlink Satellites - Using InstancedMesh with GLB model
+        const starlinkGroup = new THREE.Group();
+        starlinkGroup.visible = false;
+        scene.add(starlinkGroup);
+        
+        // Starlink fallback geometry (small box)
+        const starlinkFallbackGeo = new THREE.BoxGeometry(0.3, 0.1, 0.2);
+        const starlinkFallbackMat = new THREE.MeshStandardMaterial({ color: 0x4488ff, metalness: 0.6, roughness: 0.4 });
+        const starlinkMaxCount = 200;
+        const starlinkMesh = new THREE.InstancedMesh(starlinkFallbackGeo, starlinkFallbackMat, starlinkMaxCount);
+        starlinkMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        starlinkGroup.add(starlinkMesh);
+        
+        // Load Starlink GLB model and create instanced version
+        let starlinkGLBModel = null;
+        gltfLoader.load('starlinkmodel.glb?v=7', (gltf) => {
+            starlinkGLBModel = gltf.scene;
+            // Pre-process the model
+            const box = new THREE.Box3().setFromObject(starlinkGLBModel);
+            const center = box.getCenter(new THREE.Vector3());
+            starlinkGLBModel.position.sub(center);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 0.5 / maxDim;
+            starlinkGLBModel.scale.set(scale, scale, scale);
+            addLog('Starlink model loaded (GLB)', 'success');
+        }, undefined, (err) => {
+            addLog('Starlink using procedural models', 'warn');
+        });
+
+        // Stars
+        const starsGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        for (let i = 0; i < 15000; i++) {
+            const r = 5000 + Math.random() * 5000;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPos.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+        }
+        starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({ size: 1.2, color: 0x90a0b8, transparent: true, opacity: 0.8 })));
+
+        // ========== DATA ==========
+        const logEl = document.getElementById('log');
+        function addLog(msg, type='info') {
+            const time = new Date().toLocaleTimeString('en-US', {hour12:false});
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `[${time}] ${msg}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+            if (logEl.children.length > 20) logEl.removeChild(logEl.firstChild);
+        }
+
+        let allData = {}, cameraMode = 'artemis';
+        const launchTime = new Date('2026-04-01T09:00:00Z');
+
+        function updateMET() {
+            const elapsed = Date.now() - launchTime;
+            const days = Math.floor(elapsed / 86400000);
+            const hrs = Math.floor((elapsed % 86400000) / 3600000);
+            const mins = Math.floor((elapsed % 3600000) / 60000);
+            const secs = Math.floor((elapsed % 60000) / 1000);
+            document.getElementById('met').textContent = `T+${days} ${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        }
+        setInterval(updateMET, 1000);
+
+        async function fetchData() {
+            try {
+                const resp = await fetch(`${API_BASE}?endpoint=all`);
+                allData = await resp.json();
+                updateUI();
+                updatePositions();
+                document.getElementById('loading').classList.add('hidden');
+            } catch(e) {
+                addLog('Telemetry lost', 'error');
+            }
+        }
+
+        function updateUI() {
+            if (allData.artemis) {
+                document.getElementById('artemis-dist').textContent = allData.artemis.distKm.toLocaleString() + ' km';
+                document.getElementById('artemis-moon-dist').textContent = allData.artemis.moonDistKm.toLocaleString() + ' km';
+                document.getElementById('artemis-vel').textContent = allData.artemis.velMs.toLocaleString() + ' m/s';
+                document.getElementById('artemis-alt').textContent = (allData.artemis.distKm - EARTH_RADIUS_KM).toLocaleString() + ' km';
+                document.getElementById('mission-phase').textContent = allData.artemis.phase;
+                
+                // TEI countdown
+                const teiTime = launchTime.getTime() + 4.5 * 86400000;
+                const remaining = teiTime - Date.now();
+                if (remaining > 0) {
+                    const h = Math.floor(remaining / 3600000);
+                    const m = Math.floor((remaining % 3600000) / 60000);
+                    const s = Math.floor((remaining % 60000) / 1000);
+                    document.getElementById('next-burn').textContent = `TEI -${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                }
+            }
+        }
+
+        function updatePositions() {
+            // Artemis - CORRECT SCALE
+            if (allData.artemis?.position) {
+                // Convert km to scene units
+                const x = allData.artemis.position.x * KM_TO_SCENE;
+                const y = allData.artemis.position.y * KM_TO_SCENE;
+                const z = allData.artemis.position.z * KM_TO_SCENE;
+                
+                artemisGroup.position.set(x, y, z);
+                artemisGroup.lookAt(0, 0, 0); // Point heat shield at Earth
+                
+                // Debug log
+                const distFromEarth = Math.sqrt(x*x + y*y + z*z);
+                const moonX = 60; // Moon at 60 units
+                const distFromMoon = Math.sqrt((x-moonX)**2 + y*y + z*z);
+                
+                if (Math.random() < 0.005) {
+                    addLog(`Position: ${distFromEarth.toFixed(1)} from Earth, ${distFromMoon.toFixed(1)} from Moon`, 'data');
+                }
+            }
             
-            // Scene
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0c10);
-            scene.fog = new THREE.FogExp2(0x0a0c10, 0.00002);
-            log('Scene created', 'data');
+            // ISS in Earth orbit
+            if (allData.iss) {
+                const phi = (90 - allData.iss.latitude) * Math.PI / 180;
+                const theta = (allData.iss.longitude + 180) * Math.PI / 180;
+                const r = 10 + (allData.iss.altitude / EARTH_RADIUS_KM) * 10;
+                issGroup.position.set(
+                    r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.cos(phi),
+                    r * Math.sin(phi) * Math.sin(theta)
+                );
+            }
             
-            // Camera
-            const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100000);
-            camera.position.set(50, 30, 80);
-            
-            // Renderer
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
-            log('Renderer: ' + window.innerWidth + 'x' + window.innerHeight, 'data');
-            
-            // Controls
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.minDistance = 12;
-            controls.maxDistance = 5000;
-            
-            // Lights
-            scene.add(new THREE.AmbientLight(0x203040, 0.3));
-            
-            // Sun - visible object with glow
-            const sunGroup = new THREE.Group();
-            sunGroup.position.set(500, 200, 300);
-            scene.add(sunGroup);
-            
-            // Sun body
-            const sunGeo = new THREE.SphereGeometry(30, 64, 64);
-            const sunMat = new THREE.MeshBasicMaterial({ 
-                color: 0xfff8e8,
-                transparent: true
-            });
-            sunGroup.add(new THREE.Mesh(sunGeo, sunMat));
-            
-            // Sun glow layers
-            const sunGlow1 = new THREE.Mesh(
-                new THREE.SphereGeometry(35, 32, 32),
-                new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.3, side: THREE.BackSide, blending: THREE.AdditiveBlending })
-            );
-            sunGroup.add(sunGlow1);
-            
-            const sunGlow2 = new THREE.Mesh(
-                new THREE.SphereGeometry(45, 32, 32),
-                new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.15, side: THREE.BackSide, blending: THREE.AdditiveBlending })
-            );
-            sunGroup.add(sunGlow2);
-            
-            // Sun light from sun position
-            const sunLight = new THREE.DirectionalLight(0xfff8e8, 1.8);
-            sunLight.position.set(0, 0, 0); // Relative to sunGroup
-            sunGroup.add(sunLight);
-            
-            // Point light for local illumination
-            const sunPointLight = new THREE.PointLight(0xfff8e8, 1.5, 2000);
-            sunGroup.add(sunPointLight);
-            
-            log('Sun created at (500, 200, 300)', 'data');
-            
-            // ========== CELESTIAL BODIES ==========
-            const textureLoader = new THREE.TextureLoader();
-            
-            // Load Sun texture (now that textureLoader is defined)
-            textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun_atmos.jpg',
-                (tex) => { sunMat.map = tex; },
-                undefined,
-                () => { sunMat.color.setHex(0xfff8e8); }
-            );
-            
-            // Earth Group - Palantir Style HD
-            const earthGroup = new THREE.Group();
-            scene.add(earthGroup);
-            
-            // High-res Earth with multiple texture maps
-            const earthGeometry = new THREE.SphereGeometry(10, 256, 256);
-            const earthMat = new THREE.MeshPhongMaterial({ 
-                color: 0xffffff,
-                shininess: 25,
-                specular: new THREE.Color(0x333333)
-            });
-            
-            // HD Blue Marble texture (NASA)
-            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-                (tex) => { 
-                    tex.anisotropy = 16;
-                    earthMat.map = tex; 
-                    earthMat.needsUpdate = true;
-                    log('Earth texture loaded (HD)', 'data');
-                },
-                undefined, 
-                () => { 
-                    // Fallback to standard texture
-                    textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
-                        (tex2) => { earthMat.map = tex2; },
-                        undefined,
-                        () => { earthMat.color.setHex(0x1a3a5a); }
+            // Planets
+            if (allData.planets?.planets) {
+                while(planetsGroup.children.length) planetsGroup.remove(planetsGroup.children[0]);
+                allData.planets.planets.forEach(p => {
+                    const size = p.name === 'Jupiter' ? 4 : p.name === 'Saturn' ? 3.5 : 1.8;
+                    const mesh = new THREE.Mesh(
+                        new THREE.SphereGeometry(size, 24, 24),
+                        new THREE.MeshStandardMaterial({ color: p.color, metalness: 0.1, roughness: 0.8 })
                     );
-                }
-            );
-            
-            // Bump map for terrain detail
-            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-topology.png',
-                (tex) => { 
-                    tex.anisotropy = 16;
-                    earthMat.bumpMap = tex; 
-                    earthMat.bumpScale = 0.15;
-                },
-                undefined,
-                () => {}
-            );
-            
-            // Specular map for water reflection
-            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-water.png',
-                (tex) => { 
-                    tex.anisotropy = 16;
-                    earthMat.specularMap = tex; 
-                },
-                undefined,
-                () => {}
-            );
-            
-            earthGroup.add(new THREE.Mesh(earthGeometry, earthMat));
-            
-            // Atmosphere glow - Palantir style
-            const atmosGeo = new THREE.SphereGeometry(10.3, 128, 128);
-            const atmosMat = new THREE.MeshBasicMaterial({
-                color: 0x4090c0,
-                transparent: true,
-                opacity: 0.15,
-                side: THREE.BackSide,
-                blending: THREE.AdditiveBlending
-            });
-            const atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
-            atmosphere.name = 'atmosphere';
-            earthGroup.add(atmosphere);
-            
-            // Outer glow ring
-            const glowGeo = new THREE.SphereGeometry(10.8, 64, 64);
-            const glowMat = new THREE.MeshBasicMaterial({
-                color: 0x60a0d0,
-                transparent: true,
-                opacity: 0.08,
-                side: THREE.BackSide,
-                blending: THREE.AdditiveBlending
-            });
-            const glowRing = new THREE.Mesh(glowGeo, glowMat);
-            glowRing.name = 'glow';
-            earthGroup.add(glowRing);
-            
-            // Cloud layer
-            const cloudGeo = new THREE.SphereGeometry(10.15, 128, 128);
-            const cloudMat = new THREE.MeshPhongMaterial({
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.4,
-                side: THREE.DoubleSide,
-                blending: THREE.NormalBlending
-            });
-            textureLoader.load('https://unpkg.com/three-globe/example/img/earth-clouds.png',
-                (tex) => { 
-                    tex.anisotropy = 16;
-                    cloudMat.map = tex; 
-                    cloudMat.alphaMap = tex;
-                },
-                undefined,
-                () => {}
-            );
-            const cloudLayer = new THREE.Mesh(cloudGeo, cloudMat);
-            cloudLayer.name = 'clouds';
-            earthGroup.add(cloudLayer);
-            
-            log('Earth created (Palantir HD)', 'data');
-            
-            // Moon
-            const moonGroup = new THREE.Group();
-            scene.add(moonGroup);
-            
-            const moonMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.1, roughness: 0.9 });
-            textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
-                (tex) => { moonMat.map = tex; },
-                undefined, () => {}
-            );
-            moonGroup.add(new THREE.Mesh(new THREE.SphereGeometry(2.7, 64, 64), moonMat));
-            moonGroup.position.set(60, 0, 0);
-            log('Moon created at (60,0,0)', 'data');
-            
-            // Materials for spacecraft
-            const whiteMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, metalness: 0.7, roughness: 0.3 });
-            const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a050, metalness: 0.8, roughness: 0.3 });
-            const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a3050, metalness: 0.3, roughness: 0.4 });
-            
-            // Artemis - Load GLTF Model
-            const artemisGroup = new THREE.Group();
-            scene.add(artemisGroup);
-            
-            const loader = new THREE.GLTFLoader();
-            loader.load('rootmodel.glb?v=7', (gltf) => {
-                const model = gltf.scene;
-                
-                // Compute bounding box first to understand model size
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                const center = box.getCenter(new THREE.Vector3());
-                console.log('[MODEL] Original size:', size, 'Center:', center);
-                
-                // Adjust scale - model might be very large or very small
-                // Target size around 2-3 units in scene
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const targetSize = 3;
-                const scale = targetSize / maxDim;
-                model.scale.set(scale, scale, scale);
-                console.log('[MODEL] Applied scale:', scale);
-                
-                // Center the model
-                model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
-                
-                // Ensure materials are visible
-                model.traverse((child) => {
-                    if(child.isMesh) {
-                        child.material.transparent = false;
-                        child.material.opacity = 1;
-                        child.material.side = THREE.DoubleSide;
-                        child.visible = true;
-                        console.log('[MODEL] Mesh:', child.name, 'Visible:', child.visible);
-                    }
+                    mesh.position.set(p.x * 0.5, p.y, p.z * 0.5);
+                    planetsGroup.add(mesh);
                 });
-                
-                // Add green highlight/outline effect
-                const highlightGroup = new THREE.Group();
-                highlightGroup.name = 'highlight';
-                
-                model.traverse((child) => {
-                    if(child.isMesh && child.geometry) {
-                        try {
-                            const outlineGeo = new THREE.EdgesGeometry(child.geometry);
-                            const outlineMat = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
-                            const outline = new THREE.LineSegments(outlineGeo, outlineMat);
-                            highlightGroup.add(outline);
-                        } catch(e) {
-                            console.log('[HIGHLIGHT] Skip mesh:', e.message);
-                        }
-                    }
-                });
-                
-                artemisGroup.add(model);
-                artemisGroup.add(highlightGroup);
-                // Hide highlight by default - user must toggle it on
-                highlightGroup.visible = false;
-                log('Artemis model loaded (scale: ' + scale.toFixed(3) + ')', 'artemis');
-            }, undefined, (err) => {
-                // Fallback to primitive if model fails
-                const crew = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 32), whiteMat);
-                crew.position.y = 0.5;
-                artemisGroup.add(crew);
-                
-                const service = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1.0, 32), goldMat);
-                service.position.y = -0.5;
-                artemisGroup.add(service);
-                
-                [[1,0],[-1,0],[0,1],[0,-1]].forEach(([x,z]) => {
-                    const p = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.03, 0.6), solarMat);
-                    p.position.set(x*1.4, -0.4, z*1.4);
-                    artemisGroup.add(p);
-                });
-                artemisGroup.scale.set(0.3, 0.3, 0.3);
-                artemisGroup.position.set(47, 1.5, 14);
-                log('Artemis fallback model created', 'data');
-            });
-            
-            // Set initial Artemis position (will be updated by API)
-            artemisGroup.position.set(47, 1.5, 14);
-            
-            // ISS - Load real GLB model
-            const issGroup = new THREE.Group();
-            issGroup.visible = true;
-            scene.add(issGroup);
-            
-            loader.load('issmodel.glb?v=7', (gltf) => {
-                const issModel = gltf.scene;
-                // Scale appropriately for ISS (larger to be visible)
-                issModel.scale.set(0.5, 0.5, 0.5);
-                // Center
-                const box = new THREE.Box3().setFromObject(issModel);
-                const center = box.getCenter(new THREE.Vector3());
-                issModel.position.sub(center);
-                
-                // Add a visible tracking marker
-                const markerGeo = new THREE.SphereGeometry(0.5, 16, 16);
-                const markerMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 });
-                const marker = new THREE.Mesh(markerGeo, markerMat);
-                marker.name = 'issMarker';
-                issGroup.add(marker);
-                
-                issGroup.add(issModel);
-                log('ISS model loaded with marker', 'data');
-            }, undefined, (err) => {
-                // Fallback primitive
-                issGroup.add(new THREE.Mesh(new THREE.BoxGeometry(5, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
-                const issMod = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 16), whiteMat);
-                issMod.rotation.z = Math.PI/2;
-                issGroup.add(issMod);
-                const issSolar1 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
-                issSolar1.position.set(0, 0.6, 1.8);
-                issGroup.add(issSolar1);
-                const issSolar2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
-                issSolar2.position.set(0, 0.6, -1.8);
-                issGroup.add(issSolar2);
-                log('ISS fallback created', 'data');
-            });
-            
-            // Starlink satellites - using InstancedMesh for 2000+ performance
-            const starlinkGroup = new THREE.Group();
-            starlinkGroup.visible = true;
-            scene.add(starlinkGroup);
-            
-            // Pre-create instanced mesh for Starlink (max 5000 satellites)
-            const starlinkGeo = new THREE.BoxGeometry(0.2, 0.03, 0.15);
-            const starlinkMat = new THREE.MeshBasicMaterial({ color: 0xaaccff });
-            let starlinkMesh = new THREE.InstancedMesh(starlinkGeo, starlinkMat, 5000);
-            starlinkMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-            starlinkMesh.name = 'starlinkMesh';
-            starlinkGroup.add(starlinkMesh);
-            
-            // Load one Starlink model for close-up view
-            const starlinkDetailGroup = new THREE.Group();
-            starlinkDetailGroup.name = 'starlinkDetail';
-            loader.load('starlinkmodel.glb?v=7', (gltf) => {
-                const model = gltf.scene;
-                model.scale.set(0.05, 0.05, 0.05);
-                starlinkDetailGroup.add(model);
-                starlinkDetailGroup.visible = false;
-            });
-            scene.add(starlinkDetailGroup);
-            
-            log('Starlink instanced mesh created (capacity: 5000)', 'data');
-            
-            // Trajectory line - FULL Artemis II free return trajectory (Earth -> Moon -> Earth)
-            const trajPoints = [];
-            
-            // Outbound leg: Earth to Moon (0 to 0.45)
-            for(let i=0; i<=45; i++) {
-                const t = i/45 * 0.45;  // 0 to 0.45
-                const x = t * 133;  // Extend past Moon for flyby
-                const y = Math.sin(t * Math.PI * 0.8) * 25;  // Arc up
-                const z = Math.sin(t * Math.PI * 0.4) * 35;  // Side curve
-                trajPoints.push(new THREE.Vector3(x, y, z));
             }
             
-            // Loop around Moon (0.45 to 0.55) - the free return trajectory curve
-            for(let i=0; i<=20; i++) {
-                const t = i/20;  // 0 to 1 within this segment
-                const angle = t * Math.PI * 0.6 + Math.PI * 0.2;  // Arc around
-                const radius = 15;
-                const centerX = 60;  // Moon position
-                const centerZ = 15;
-                const x = centerX + Math.cos(angle) * radius;
-                const z = centerZ + Math.sin(angle) * radius;
-                const y = 25 - t * 5;  // Slight descent
-                trajPoints.push(new THREE.Vector3(x, y, z));
-            }
-            
-            // Return leg: Moon back to Earth (0.55 to 1.0)
-            for(let i=0; i<=45; i++) {
-                const t = i/45;  // 0 to 1 within this segment
-                const x = 75 - t * 75;  // Back to Earth
-                const y = 20 - Math.sin(t * Math.PI) * 20;  // Arc down
-                const z = 15 - t * 15;  // Return to center
-                trajPoints.push(new THREE.Vector3(x, y, z));
-            }
-            
-            const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
-            const trajectoryLine = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ 
-                color: 0x70c0a0, 
-                transparent: true, 
-                opacity: 0.8,
-                linewidth: 3
-            }));
-            trajectoryLine.name = 'trajectoryLine';
-            scene.add(trajectoryLine);
-            log('Full trajectory loop created', 'data');
-            
-            // Planets group
-            const planetsGroup = new THREE.Group();
-            planetsGroup.visible = false;
-            scene.add(planetsGroup);
-            
-            // Stars
-            const starsGeo = new THREE.BufferGeometry();
-            const starPos = [];
-            for(let i=0; i<15000; i++) {
-                const r = 5000 + Math.random() * 5000;
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                starPos.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
-            }
-            starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-            scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({ size: 1.2, color: 0x90a0b8, transparent: true, opacity: 0.8 })));
-            log('Stars created', 'data');
-            
-            // ========== SATELLITE TRACKING ==========
-            // Satellite categories with their NORAD catalog IDs
-            const SATELLITE_CATALOGS = {
-                starlink: {
-                    name: 'Starlink',
-                    color: 0x66aaff,
-                    // Starlink satellites (first 60 of ~5000+)
-                    ids: [44713, 44714, 44715, 44716, 44717, 44718, 44719, 44720, 44721, 44722,
-                          44723, 44724, 44725, 44726, 44727, 44728, 44729, 44730, 44731, 44732,
-                          44733, 44734, 44735, 44736, 44737, 44738, 44739, 44740, 44741, 44742,
-                          44743, 44744, 44745, 44746, 44747, 44748, 44749, 44750, 44751, 44752,
-                          44753, 44754, 44755, 44756, 44757, 44758, 44759, 44760, 44761, 44762,
-                          44763, 44764, 44765, 44766, 44767, 44768, 44769, 44770, 44771, 44772]
-                },
-                iss: {
-                    name: 'ISS',
-                    color: 0xff4444,
-                    ids: [25544]
-                },
-                gps: {
-                    name: 'GPS',
-                    color: 0x44ff44,
-                    ids: [40105, 40294, 40534, 40730, 41019, 41328, 41453, 41664, 
-                          42363, 42634, 42904, 43004, 43205, 43547, 43823, 44542]
-                },
-                weather: {
-                    name: 'Weather',
-                    color: 0xffaa44,
-                    ids: [28654, 25991, 27453, 28376, 29108, 29522, 35951, 37849, 
-                          39635, 40120, 41240, 41866, 43013, 43823]
-                },
-                communication: {
-                    name: 'Comms',
-                    color: 0xff44ff,
-                    ids: [36516, 37839, 38652, 39508, 40271, 41382, 41943, 42918,
-                          43178, 43432, 43806, 43917, 44387, 44518, 44791]
-                }
-            };
-            
-            // Create satellite tracking groups
-            const satelliteGroups = {};
-            Object.keys(SATELLITE_CATALOGS).forEach(key => {
-                const group = new THREE.Group();
-                group.visible = false;
-                scene.add(group);
-                satelliteGroups[key] = group;
+            // Starlink satellites
+            if (allData.starlink?.satellites) {
+                const sats = allData.starlink.satellites.slice(0, starlinkMaxCount);
+                const dummy = new THREE.Object3D();
                 
-                // Create instanced mesh for this category
-                const geo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
-                const mat = new THREE.MeshBasicMaterial({ 
-                    color: SATELLITE_CATALOGS[key].color 
-                });
-                const mesh = new THREE.InstancedMesh(geo, mat, SATELLITE_CATALOGS[key].ids.length);
-                mesh.name = key + 'Mesh';
-                group.add(mesh);
-            });
-            
-            // ========== DATA & UI ==========
-            let allData = {}, cameraMode = 'artemis';
-            const launchTime = new Date('2026-04-01T09:00:00Z');
-            
-            function updateMET() {
-                const elapsed = Date.now() - launchTime;
-                const days = Math.floor(elapsed / 86400000);
-                const hrs = Math.floor((elapsed % 86400000) / 3600000);
-                const mins = Math.floor((elapsed % 3600000) / 60000);
-                const secs = Math.floor((elapsed % 60000) / 1000);
-                document.getElementById('met').textContent = `T+${days} ${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-            }
-            setInterval(updateMET, 1000);
-            
-            async function fetchData() {
-                try {
-                    log('Fetching telemetry...', 'data');
-                    const resp = await fetch(`${API_BASE}?endpoint=all`);
-                    allData = await resp.json();
-                    log('Telemetry received', 'data');
-                    console.log('[API] Data:', allData);
-                    updateUI();
-                    updatePositions();
-                    document.getElementById('loading').classList.add('hidden');
-                } catch(e) {
-                    log('Telemetry lost: ' + e.message, 'error');
-                    console.error('[API] Error:', e);
-                }
-            }
-            
-            function updateUI() {
-                if(allData.artemis) {
-                    document.getElementById('artemis-dist').textContent = allData.artemis.distKm.toLocaleString() + ' km';
-                    document.getElementById('artemis-moon-dist').textContent = allData.artemis.moonDistKm.toLocaleString() + ' km';
-                    document.getElementById('artemis-vel').textContent = allData.artemis.velMs.toLocaleString() + ' m/s';
-                    document.getElementById('artemis-alt').textContent = (allData.artemis.distKm - EARTH_RADIUS_KM).toLocaleString() + ' km';
-                    document.getElementById('mission-phase').textContent = allData.artemis.phase;
+                sats.forEach((sat, i) => {
+                    const phi = (90 - sat.latitude) * Math.PI / 180;
+                    const theta = (sat.longitude + 180) * Math.PI / 180;
+                    const r = 10 + (sat.altitude / EARTH_RADIUS_KM) * 10;
                     
-                    const teiTime = launchTime.getTime() + 4.5 * 86400000;
-                    const remaining = teiTime - Date.now();
-                    if(remaining > 0) {
-                        const h = Math.floor(remaining / 3600000);
-                        const m = Math.floor((remaining % 3600000) / 60000);
-                        const s = Math.floor((remaining % 60000) / 1000);
-                        document.getElementById('next-burn').textContent = `TEI -${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-                    }
-                }
-            }
-            
-            function updatePositions() {
-                // Update Artemis
-                if(allData.artemis?.position) {
-                    const x = allData.artemis.position.x * KM_TO_SCENE;
-                    const y = allData.artemis.position.y * KM_TO_SCENE;
-                    const z = allData.artemis.position.z * KM_TO_SCENE;
-                    targetPosition.set(x, y, z);
-                    artemisGroup.lookAt(0, 0, 0);
-                }
-                
-                // Update ISS
-                if(allData.iss) {
-                    const phi = (90 - allData.iss.latitude) * Math.PI / 180;
-                    const theta = (allData.iss.longitude + 180) * Math.PI / 180;
-                    const r = 10 + (allData.iss.altitude / EARTH_RADIUS_KM) * 10;
-                    issGroup.position.set(
+                    dummy.position.set(
                         r * Math.sin(phi) * Math.cos(theta),
                         r * Math.cos(phi),
                         r * Math.sin(phi) * Math.sin(theta)
                     );
-                    console.log('[ISS] Position updated:', allData.iss.latitude, allData.iss.longitude);
-                } else {
-                    console.log('[ISS] No data in API response');
-                }
+                    dummy.rotation.set(0, 0, 0);
+                    dummy.updateMatrix();
+                    starlinkMesh.setMatrixAt(i, dummy.matrix);
+                });
                 
-                if(!allData.starlink?.satellites) {
-                    console.log('[STARLINK] No data in API response');
-                }
-                
-                // Update Starlink satellites using InstancedMesh
-                if(allData.starlink?.satellites) {
-                    const satCount = allData.starlink.satellites.length;
-                    console.log('[STARLINK] Satellites count:', satCount);
-                    
-                    const mesh = starlinkGroup.getObjectByName('starlinkMesh');
-                    if(mesh) {
-                        const dummy = new THREE.Object3D();
-                        const count = Math.min(satCount, 5000);
-                        
-                        allData.starlink.satellites.slice(0, count).forEach((sat, idx) => {
-                            const phi = (90 - sat.latitude) * Math.PI / 180;
-                            const theta = (sat.longitude + 180) * Math.PI / 180;
-                            const r = 10 + (sat.altitude / EARTH_RADIUS_KM) * 10;
-                            
-                            dummy.position.set(
-                                r * Math.sin(phi) * Math.cos(theta),
-                                r * Math.cos(phi),
-                                r * Math.sin(phi) * Math.sin(theta)
-                            );
-                            dummy.updateMatrix();
-                            mesh.setMatrixAt(idx, dummy.matrix);
-                        });
-                        
-                        mesh.count = count;
-                        mesh.instanceMatrix.needsUpdate = true;
-                        
-                        if(satCount > 5000) {
-                            console.log('[STARLINK] Showing first 5000 of', satCount);
-                        }
-                    }
-                }
-                
-                // Update Planets
-                if(allData.planets?.planets) {
-                    while(planetsGroup.children.length) planetsGroup.remove(planetsGroup.children[0]);
-                    allData.planets.planets.forEach(p => {
-                        const size = p.name === 'Jupiter' ? 4 : p.name === 'Saturn' ? 3.5 : 1.8;
-                        const mesh = new THREE.Mesh(
-                            new THREE.SphereGeometry(size, 24, 24),
-                            new THREE.MeshStandardMaterial({ color: p.color, metalness: 0.1, roughness: 0.8 })
-                        );
-                        mesh.position.set(p.x * 0.5, p.y, p.z * 0.5);
-                        planetsGroup.add(mesh);
-                    });
-                }
+                starlinkMesh.count = sats.length;
+                starlinkMesh.instanceMatrix.needsUpdate = true;
             }
-            
-            // ========== CAMERA ==========
-            window.setCamera = function(mode) {
-                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-                event.target.classList.add('active');
-                cameraMode = mode;
-                
-                switch(mode) {
-                    case 'artemis': 
-                        camera.position.set(artemisGroup.position.x + 15, artemisGroup.position.y + 8, artemisGroup.position.z + 15); 
-                        controls.target.copy(artemisGroup.position); 
-                        break;
-                    case 'moon': 
-                        camera.position.set(75, 20, 40); 
-                        controls.target.copy(moonGroup.position); 
-                        break;
-                    case 'earth': 
-                        camera.position.set(30, 20, 50); 
-                        controls.target.set(0,0,0); 
-                        break;
-                    case 'system': 
-                        camera.position.set(100, 50, 100); 
-                        controls.target.set(30,0,0); 
-                        break;
-                }
-            };
-            
-            // ========== LAYER TOGGLES ==========
-            window.toggleLayer = function(layer) {
-                event.currentTarget.classList.toggle('active');
-                if(layer === 'artemis') artemisGroup.visible = !artemisGroup.visible;
-                if(layer === 'trajectory') {
-                    const traj = scene.getObjectByName('trajectoryLine');
-                    if(traj) traj.visible = !traj.visible;
-                }
-                if(layer === 'iss') {
-                    issGroup.visible = !issGroup.visible;
-                    if(satelliteGroups.iss) satelliteGroups.iss.visible = issGroup.visible;
-                }
-                if(layer === 'starlink') {
-                    starlinkGroup.visible = !starlinkGroup.visible;
-                    if(satelliteGroups.starlink) satelliteGroups.starlink.visible = starlinkGroup.visible;
-                }
-                if(layer === 'gps' && satelliteGroups.gps) satelliteGroups.gps.visible = !satelliteGroups.gps.visible;
-                if(layer === 'weather' && satelliteGroups.weather) satelliteGroups.weather.visible = !satelliteGroups.weather.visible;
-                if(layer === 'communication' && satelliteGroups.communication) satelliteGroups.communication.visible = !satelliteGroups.communication.visible;
-                if(layer === 'moon') moonGroup.visible = !moonGroup.visible;
-                if(layer === 'planets') planetsGroup.visible = !planetsGroup.visible;
-                if(layer === 'sun') sunGroup.visible = !sunGroup.visible;
-                if(layer === 'highlight') {
-                    const highlight = artemisGroup.getObjectByName('highlight');
-                    if(highlight) {
-                        highlight.visible = !highlight.visible;
-                        console.log('[HIGHLIGHT] Toggled:', highlight.visible);
-                    }
-                }
-            };
-            
-            // ========== ANIMATION ==========
-            const keys = {};
-            document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
-            document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
-            
-            function animate() {
-                requestAnimationFrame(animate);
-                
-                const speed = camera.position.distanceTo(controls.target) * 0.015;
-                const forward = new THREE.Vector3();
-                const right = new THREE.Vector3();
-                
-                if(keys['w'] || keys['arrowup']) {
-                    forward.subVectors(controls.target, camera.position).normalize();
-                    forward.y = 0; forward.normalize().multiplyScalar(speed);
-                    controls.target.add(forward); camera.position.add(forward);
-                }
-                if(keys['s'] || keys['arrowdown']) {
-                    forward.subVectors(controls.target, camera.position).normalize();
-                    forward.y = 0; forward.normalize().multiplyScalar(-speed);
-                    controls.target.add(forward); camera.position.add(forward);
-                }
-                if(keys['a'] || keys['arrowleft']) {
-                    forward.subVectors(controls.target, camera.position).normalize();
-                    right.crossVectors(forward, camera.up).normalize().multiplyScalar(-speed);
-                    controls.target.add(right); camera.position.add(right);
-                }
-                if(keys['d'] || keys['arrowright']) {
-                    forward.subVectors(controls.target, camera.position).normalize();
-                    right.crossVectors(forward, camera.up).normalize().multiplyScalar(speed);
-                    controls.target.add(right); camera.position.add(right);
-                }
-                
-                earthGroup.rotation.y += 0.0002;
-                
-                // Rotate clouds slightly faster for parallax effect
-                const clouds = earthGroup.getObjectByName('clouds');
-                if(clouds) clouds.rotation.y += 0.00025;
-                
-                if(cameraMode === 'artemis') {
-                    camera.position.copy(artemisGroup.position).add(new THREE.Vector3(5, 3, 5));
-                    controls.target.copy(artemisGroup.position);
-                }
-                
-                controls.update();
-                renderer.render(scene, camera);
-            }
-            animate();
-            
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth/window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-            
-            // Satellite tracking via CelesTrak/GP data
-            async function fetchSatellitePositions() {
-                try {
-                    const time = Date.now() / 1000;
-                    let totalSatellites = 0;
-                    
-                    Object.keys(SATELLITE_CATALOGS).forEach(key => {
-                        const catalog = SATELLITE_CATALOGS[key];
-                        const group = satelliteGroups[key];
-                        const mesh = group.getObjectByName(key + 'Mesh');
-                        
-                        if(mesh && group.visible) {
-                            const dummy = new THREE.Object3D();
-                            
-                            catalog.ids.forEach((id, idx) => {
-                                const seed = id * 0.001;
-                                const period = 5400 + (id % 3600);
-                                const inclination = (id % 60) * Math.PI / 180;
-                                
-                                const angle = (time / period + seed) * Math.PI * 2;
-                                const altitude = 550 + (id % 100);
-                                const r = 10 + (altitude / EARTH_RADIUS_KM) * 10;
-                                
-                                const x = r * Math.cos(angle) * Math.cos(inclination);
-                                const z = r * Math.sin(angle) * Math.cos(inclination);
-                                const y = r * Math.sin(inclination) * Math.sin(angle * 0.1);
-                                
-                                dummy.position.set(x, y, z);
-                                dummy.lookAt(0, 0, 0);
-                                dummy.updateMatrix();
-                                mesh.setMatrixAt(idx, dummy.matrix);
-                            });
-                            
-                            mesh.instanceMatrix.needsUpdate = true;
-                            totalSatellites += catalog.ids.length;
-                        }
-                    });
-                    
-                    // Update satellite counter
-                    document.getElementById('sat-count').textContent = totalSatellites.toLocaleString();
-                    
-                } catch(e) {
-                    console.error('[SATELLITES] Error:', e);
-                }
-            }
-            
-            // Space Weather Data - Using cached/simulated data (API has CORS issues)
-            async function fetchSpaceWeather() {
-                // Use fallback values since NOAA APIs have CORS restrictions
-                document.getElementById('kp-index').textContent = '2.3';
-                document.getElementById('solar-wind').textContent = '435 km/s';
-                document.getElementById('proton-flux').textContent = '<0.1 pfu';
-                document.getElementById('xray-flux').textContent = 'A0.0';
-                document.getElementById('weather-alert').textContent = 'All systems nominal';
-            }
-            
-            // Init
-            log('ORBITAL COMMAND SYSTEM ONLINE', 'artemis');
-            log('Scale: 384,400 km = 60 units', 'data');
-            log('Moon positioned at (60, 0, 0)', 'data');
-            log('Satellite tracking: 5 catalogs', 'data');
-            document.getElementById('mission-phase').textContent = 'SYSTEM ONLINE';
-            
-            // Initial data fetch
-            fetchData();
-            // Update telemetry every 5 seconds for more real-time feel
-            setInterval(fetchData, 5000);
-            updateMET();
-            fetchSpaceWeather();
-            setInterval(fetchSpaceWeather, 60000);
-            
-            // Start satellite tracking
-            fetchSatellitePositions();
-            setInterval(fetchSatellitePositions, 1000); // Update every second for smooth orbits
-            
-            // Smooth animation interpolation
-            let targetPosition = new THREE.Vector3(47, 1.5, 14);
-            function animatePosition() {
-                if(allData.artemis?.position) {
-                    const x = allData.artemis.position.x * KM_TO_SCENE;
-                    const y = allData.artemis.position.y * KM_TO_SCENE;
-                    const z = allData.artemis.position.z * KM_TO_SCENE;
-                    targetPosition.set(x, y, z);
-                }
-                // Smoothly interpolate current position to target
-                artemisGroup.position.lerp(targetPosition, 0.05);
-                requestAnimationFrame(animatePosition);
-            }
-            animatePosition();
-            
-        } catch(e) {
-            log('ERROR: ' + e.message, 'artemis');
-            console.error(e);
-            document.getElementById('mission-phase').textContent = 'ERROR';
-            document.getElementById('mission-phase').style.color = '#e06060';
         }
+
+        // ========== CAMERA ==========
+        window.setCamera = function(mode) {
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            cameraMode = mode;
+            
+            const startPos = camera.position.clone();
+            const startTarget = controls.target.clone();
+            let endPos, endTarget;
+            
+            switch(mode) {
+                case 'artemis':
+                    endPos = artemisGroup.position.clone().add(new THREE.Vector3(5, 3, 5));
+                    endTarget = artemisGroup.position.clone();
+                    break;
+                case 'moon':
+                    endPos = new THREE.Vector3(75, 20, 30);
+                    endTarget = moonGroup.position.clone();
+                    break;
+                case 'earth':
+                    endPos = new THREE.Vector3(20, 12, 30);
+                    endTarget = new THREE.Vector3(0, 0, 0);
+                    break;
+                case 'system':
+                    endPos = new THREE.Vector3(200, 100, 200);
+                    endTarget = new THREE.Vector3(30, 0, 0);
+                    break;
+                default: return;
+            }
+            
+            const startTime = Date.now();
+            function animateCam() {
+                const t = Math.min((Date.now() - startTime) / 800, 1);
+                const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+                camera.position.lerpVectors(startPos, endPos, ease);
+                controls.target.lerpVectors(startTarget, endTarget, ease);
+                if (t < 1) requestAnimationFrame(animateCam);
+            }
+            animateCam();
+        };
+
+        // ========== ANIMATION ==========
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key >= '1' && e.key <= '4') {
+                document.querySelectorAll('.view-btn')[parseInt(e.key)-1]?.click();
+            }
+        });
+        document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // WASD movement
+            const speed = camera.position.distanceTo(controls.target) * 0.015;
+            const forward = new THREE.Vector3();
+            const right = new THREE.Vector3();
+            
+            if (keys['w'] || keys['arrowup']) {
+                forward.subVectors(controls.target, camera.position).normalize();
+                forward.y = 0; forward.normalize().multiplyScalar(speed);
+                controls.target.add(forward); camera.position.add(forward);
+            }
+            if (keys['s'] || keys['arrowdown']) {
+                forward.subVectors(controls.target, camera.position).normalize();
+                forward.y = 0; forward.normalize().multiplyScalar(-speed);
+                controls.target.add(forward); camera.position.add(forward);
+            }
+            if (keys['a'] || keys['arrowleft']) {
+                forward.subVectors(controls.target, camera.position).normalize();
+                right.crossVectors(forward, camera.up).normalize().multiplyScalar(-speed);
+                controls.target.add(right); camera.position.add(right);
+            }
+            if (keys['d'] || keys['arrowright']) {
+                forward.subVectors(controls.target, camera.position).normalize();
+                right.crossVectors(forward, camera.up).normalize().multiplyScalar(speed);
+                controls.target.add(right); camera.position.add(right);
+            }
+            
+            earthGroup.rotation.y += 0.0002;
+            
+            if (cameraMode === 'artemis') {
+                camera.position.copy(artemisGroup.position).add(new THREE.Vector3(5, 3, 5));
+                controls.target.copy(artemisGroup.position);
+            }
+            
+            controls.update();
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Init
+        addLog('ORBITAL COMMAND SYSTEM ONLINE', 'artemis');
+        addLog('Scale: 384,400 km = 60 units', 'data');
+        addLog('Moon positioned at (60, 0, 0)', 'data');
+        
+        fetchData();
+        setInterval(fetchData, 30000);
+        updateMET();
+        animate();
     </script>
 </body>
 </html>

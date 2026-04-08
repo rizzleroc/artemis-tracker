@@ -525,6 +525,9 @@
         // Position Moon correctly
         moonGroup.position.set(60, 0, 0);
 
+        // GLTF Loader for models
+        const gltfLoader = new GLTFLoader();
+
         // Artemis - Procedural fallback + GLB loader
         const artemisGroup = new THREE.Group();
         scene.add(artemisGroup);

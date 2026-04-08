@@ -1,20 +1,20 @@
 {
-  "distKm": 302871,
+  "distKm": 302869,
   "velMs": 267,
   "velKms": 0.27,
-  "moonDistKm": 81529,
+  "moonDistKm": 81531,
   "phase": "OUTBOUND COAST",
   "source": "NASA JPL HORIZONS (ARTEMIS II)",
   "targetName": "OBJ: ORION EM-2",
   "position": {
-    "x": -79976,
-    "y": -289822,
-    "z": -36582
+    "x": -79977,
+    "y": -289819,
+    "z": -36588
   },
   "velocity": {
     "vx": -0.264,
     "vy": 0,
     "vz": -0.046
   },
-  "timestamp": "2026-04-08T02:48:13.525Z"
+  "timestamp": "2026-04-08T03:52:41.754Z"
 }

@@ -1,20 +1,20 @@
 {
-  "distKm": 204850,
+  "distKm": 204852,
   "velMs": 0,
   "velKms": 0,
-  "moonDistKm": 179550,
+  "moonDistKm": 179548,
   "phase": "TRANS-LUNAR",
   "source": "NASA JPL HORIZONS (ARTEMIS II)",
   "targetName": "OBJ: ORION EM-2",
   "position": {
-    "x": -35891,
-    "y": -199307,
-    "z": -30863
+    "x": -35867,
+    "y": -199310,
+    "z": -30883
   },
   "velocity": {
     "vx": 0,
     "vy": 0,
     "vz": 0
   },
-  "timestamp": "2026-04-09T07:20:59.706Z"
+  "timestamp": "2026-04-09T08:03:27.515Z"
 }

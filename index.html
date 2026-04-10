@@ -495,10 +495,18 @@
         const earthGroup = new THREE.Group();
         scene.add(earthGroup);
         
-        const earthMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.75 });
+        const earthMat = new THREE.MeshStandardMaterial({ color: 0x1a3a5a, metalness: 0.1, roughness: 0.75 });
         textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
-            (tex) => { earthMat.map = tex; },
-            undefined, () => { earthMat.color.setHex(0x1a3a5a); }
+            (tex) => { 
+                earthMat.map = tex; 
+                earthMat.needsUpdate = true;
+                addLog('Earth texture loaded', 'success');
+            },
+            undefined, 
+            (err) => { 
+                addLog('Earth texture failed, using fallback', 'warn');
+                earthMat.color.setHex(0x1a3a5a); 
+            }
         );
         
         // Earth radius = 6371 km = ~1 unit at this scale
@@ -514,8 +522,12 @@
         
         const moonMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.1, roughness: 0.9 });
         textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
-            (tex) => { moonMat.map = tex; },
-            undefined, () => {}
+            (tex) => { 
+                moonMat.map = tex; 
+                moonMat.needsUpdate = true;
+            },
+            undefined, 
+            () => { addLog('Moon texture failed, using fallback', 'warn'); }
         );
         // Moon radius = 1737 km = ~0.27 unit at this scale
         moonGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.27, 64, 64), moonMat));

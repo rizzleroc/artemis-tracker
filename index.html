@@ -543,12 +543,12 @@
         };
         
         function updateVisibility() {
-            artemisGroup.visible = layers.artemis;
-            trajectoryLine.visible = layers.trajectory;
-            issGroup.visible = layers.iss;
-            moonGroup.visible = layers.moon;
-            planetsGroup.visible = layers.planets;
-            starlinkGroup.visible = layers.starlink;
+            if (artemisGroup) artemisGroup.visible = layers.artemis;
+            if (trajectoryLine) trajectoryLine.visible = layers.trajectory;
+            if (issGroup) issGroup.visible = layers.iss;
+            if (moonGroup) moonGroup.visible = layers.moon;
+            if (planetsGroup) planetsGroup.visible = layers.planets;
+            if (starlinkGroup) starlinkGroup.visible = layers.starlink;
         }
         
         // ========== SCENE ==========

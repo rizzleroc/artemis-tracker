@@ -914,57 +914,44 @@
         let playbackTime = 3 * 86400000; // Start at day 3 (current mission time)
         let lastFrameTime = Date.now();
         
-        // Generate interpolated trajectory data
+        // Generate interpolated trajectory data - MUST MATCH trajectory line exactly!
         function getArtemisPositionAtTime(elapsedDays) {
             const missionDuration = 10; // 10 days
             const t = Math.max(0, Math.min(1, elapsedDays / missionDuration));
             
-            // Trajectory phases
             let pos = { x: 0, y: 0, z: 0 };
             let vel = 0;
             let phase = 'LAUNCH';
             
-            if (t < 0.05) {
-                // Launch to TLI (Earth orbit)
-                const phaseT = t / 0.05;
-                pos.x = phaseT * 5;
-                pos.y = phaseT * 2;
-                pos.z = Math.sin(phaseT * Math.PI) * 3;
-                vel = 7000 + phaseT * 3000;
-                phase = 'EARTH ORBIT';
-            } else if (t < 0.4) {
-                // TLI to Lunar approach
-                const phaseT = (t - 0.05) / 0.35;
-                pos.x = 5 + phaseT * 55;
-                pos.y = 2 + Math.sin(phaseT * Math.PI) * 8;
-                pos.z = 3 + Math.sin(phaseT * Math.PI * 0.5) * 12;
-                vel = 10000 - phaseT * 2000;
-                phase = 'TRANS-LUNAR INJECTION';
-            } else if (t < 0.5) {
-                // Lunar flyby
-                const phaseT = (t - 0.4) / 0.1;
-                const angle = phaseT * Math.PI;
-                pos.x = 60 - Math.cos(angle) * 5;
-                pos.y = Math.sin(angle) * 4;
-                pos.z = 15 - Math.sin(angle) * 10;
-                vel = 8000 + Math.sin(angle) * 2000;
+            // Phase 1: Earth to Moon (0 to 40% = 0 to 4 days)
+            if (t < 0.4) {
+                const phaseT = t / 0.4; // 0 to 1 within this phase
+                // Match trajectory line: x = t * 60, y = sin(t*PI) * 5, z = sin(t*PI*0.5) * 10
+                pos.x = phaseT * 60;
+                pos.y = Math.sin(phaseT * Math.PI) * 5;
+                pos.z = Math.sin(phaseT * Math.PI * 0.5) * 10;
+                vel = 10000;
+                phase = phaseT < 0.125 ? 'EARTH ORBIT' : 'TRANS-LUNAR INJECTION';
+            }
+            // Phase 2: Lunar flyby (40% to 50% = 4 to 5 days)
+            else if (t < 0.5) {
+                const phaseT = (t - 0.4) / 0.1; // 0 to 1 within this phase
+                // Match trajectory line: curve behind Moon
+                pos.x = 60 - Math.sin(phaseT * Math.PI) * 5;
+                pos.y = Math.cos(phaseT * Math.PI) * 3;
+                pos.z = 10 + Math.sin(phaseT * Math.PI) * 8;
+                vel = 8000;
                 phase = 'LUNAR FLYBY';
-            } else if (t < 0.9) {
-                // Return to Earth
-                const phaseT = (t - 0.5) / 0.4;
+            }
+            // Phase 3: Return to Earth (50% to 100% = 5 to 10 days)
+            else {
+                const phaseT = (t - 0.5) / 0.5; // 0 to 1 within this phase
+                // Match trajectory line: x = 55 * (1-t), y = -sin(t*PI) * 4, z = 18 - t*25
                 pos.x = 55 * (1 - phaseT);
-                pos.y = -Math.sin(phaseT * Math.PI) * 6;
-                pos.z = 5 - phaseT * 8;
-                vel = 10000 - phaseT * 3000;
-                phase = 'RETURN COAST';
-            } else {
-                // Re-entry
-                const phaseT = (t - 0.9) / 0.1;
-                pos.x = phaseT * 2;
-                pos.y = -phaseT * 10;
-                pos.z = -3 + phaseT * 3;
-                vel = 7000 + phaseT * 4000;
-                phase = 'RE-ENTRY';
+                pos.y = -Math.sin(phaseT * Math.PI) * 4;
+                pos.z = 18 - phaseT * 25;
+                vel = 9000;
+                phase = phaseT > 0.8 ? 'RE-ENTRY' : 'RETURN COAST';
             }
             
             return { position: pos, velocity: vel, phase: phase };
@@ -1134,17 +1121,53 @@
             if (allData.planets?.planets) {
                 while(planetsGroup.children.length) planetsGroup.remove(planetsGroup.children[0]);
                 allData.planets.planets.forEach(p => {
-                    // Planet sizes relative to Earth (radius = 1 unit)
-                    // Jupiter = 11x Earth, Saturn = 9x, Venus = 0.95x, Mars = 0.53x
-                    // Exaggerated for visibility but more realistic
-                    const size = p.name === 'Jupiter' ? 2 : p.name === 'Saturn' ? 1.8 : p.name === 'Venus' ? 0.9 : 0.5;
+                    // Planet sizes: Earth radius = 1 unit (6,371 km)
+                    // Actual radii: Mercury=0.38, Venus=0.95, Mars=0.53, Jupiter=11, Saturn=9, Uranus=4, Neptune=3.9
+                    // Scaled for visibility but proportional
+                    const earthRadius = 6371;
+                    const relativeRadius = p.radius / earthRadius;
+                    // Exaggerate small planets, compress giants slightly for visual balance
+                    let displayRadius;
+                    if (relativeRadius < 1) {
+                        displayRadius = Math.max(0.15, relativeRadius * 0.5); // Small planets: min 0.15
+                    } else {
+                        displayRadius = Math.min(3, relativeRadius * 0.15); // Giants: max 3
+                    }
+                    
                     const mesh = new THREE.Mesh(
-                        new THREE.SphereGeometry(size, 24, 24),
-                        new THREE.MeshStandardMaterial({ color: p.color, metalness: 0.1, roughness: 0.8 })
+                        new THREE.SphereGeometry(displayRadius, 32, 32),
+                        new THREE.MeshStandardMaterial({ 
+                            color: p.color, 
+                            metalness: 0.1, 
+                            roughness: 0.7,
+                            emissive: p.color,
+                            emissiveIntensity: 0.1
+                        })
                     );
-                    // Position planets much further out (scale down by 100x instead of 2x)
-                    mesh.position.set(p.x * 0.01, p.y * 0.02, p.z * 0.01);
+                    // Use scaled positions from API (already in scene units)
+                    mesh.position.set(p.x, p.y, p.z);
+                    
+                    // Add planet label
+                    mesh.userData = { 
+                        name: p.name, 
+                        distanceAU: p.distanceAU,
+                        distanceMkm: p.distanceMkm 
+                    };
+                    
                     planetsGroup.add(mesh);
+                    
+                    // Add orbit ring
+                    const orbitRadius = Math.sqrt(p.x*p.x + p.z*p.z);
+                    const orbitGeo = new THREE.RingGeometry(orbitRadius - 0.2, orbitRadius + 0.2, 64);
+                    const orbitMat = new THREE.MeshBasicMaterial({ 
+                        color: p.color, 
+                        transparent: true, 
+                        opacity: 0.15,
+                        side: THREE.DoubleSide
+                    });
+                    const orbitRing = new THREE.Mesh(orbitGeo, orbitMat);
+                    orbitRing.rotation.x = Math.PI / 2;
+                    planetsGroup.add(orbitRing);
                 });
             }
             
@@ -1197,8 +1220,9 @@
                     endTarget = new THREE.Vector3(30, 0, 0);
                     break;
                 case 'system':
-                    endPos = new THREE.Vector3(100, 40, 80);
-                    endTarget = new THREE.Vector3(30, 0, 0);
+                    // Position to see all planets (Neptune ~200 units out)
+                    endPos = new THREE.Vector3(150, 80, 200);
+                    endTarget = new THREE.Vector3(50, 0, 0);
                     break;
                 default: return;
             }

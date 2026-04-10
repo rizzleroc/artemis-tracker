@@ -548,7 +548,7 @@
         
         function updateVisibility() {
             if (artemisGroup) artemisGroup.visible = layers.artemis;
-            if (trajectoryLine) trajectoryLine.visible = layers.trajectory;
+            if (trajectoryGroup) trajectoryGroup.visible = layers.trajectory;
             if (issGroup) issGroup.visible = layers.iss;
             if (moonGroup) moonGroup.visible = layers.moon;
             if (planetsGroup) planetsGroup.visible = layers.planets;
@@ -772,14 +772,17 @@
         
         const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
         
-        // Create a glow effect using multiple lines
+        // Create trajectory line group for easy toggling
+        const trajectoryGroup = new THREE.Group();
+        scene.add(trajectoryGroup);
+        
         const trajectoryLine = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ 
             color: 0x70c0a0, 
             transparent: true, 
             opacity: 0.8,
             linewidth: 3 
         }));
-        scene.add(trajectoryLine);
+        trajectoryGroup.add(trajectoryLine);
         
         // Add a second brighter line for glow effect
         const trajectoryGlow = new THREE.Line(trajGeo, new THREE.LineBasicMaterial({ 
@@ -789,7 +792,7 @@
             linewidth: 6 
         }));
         trajectoryGlow.scale.set(1.01, 1.01, 1.01);
-        scene.add(trajectoryGlow);
+        trajectoryGroup.add(trajectoryGlow);
 
         // Planets
         const planetsGroup = new THREE.Group();

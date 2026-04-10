@@ -1008,35 +1008,47 @@
             const mins = Math.floor((playbackTime % 3600000) / 60000);
             const secs = Math.floor((playbackTime % 60000) / 1000);
             
-            document.getElementById('met').textContent = 
-                `T+${Math.floor(days)} ${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+            const metEl = document.getElementById('met');
+            if (metEl) metEl.textContent = `T+${Math.floor(days)} ${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
             
             const artemisData = getArtemisPositionAtTime(days);
-            document.getElementById('mission-phase').textContent = artemisData.phase;
+            
+            const phaseEl = document.getElementById('mission-phase');
+            if (phaseEl) phaseEl.textContent = artemisData.phase;
             
             // Update distances
             const distFromEarth = Math.sqrt(artemisData.position.x**2 + artemisData.position.y**2 + artemisData.position.z**2);
             const distFromMoon = Math.sqrt((artemisData.position.x - 60)**2 + artemisData.position.y**2 + artemisData.position.z**2);
             
-            document.getElementById('artemis-dist').textContent = (distFromEarth * 6371).toFixed(0) + ' km';
-            document.getElementById('artemis-moon-dist').textContent = (distFromMoon * 6371).toFixed(0) + ' km';
-            document.getElementById('artemis-vel').textContent = artemisData.velocity.toFixed(0) + ' m/s';
-            document.getElementById('artemis-alt').textContent = (distFromEarth * 6371 - 6371).toFixed(0) + ' km';
+            const distEl = document.getElementById('artemis-dist');
+            if (distEl) distEl.textContent = (distFromEarth * 6371).toFixed(0) + ' km';
+            
+            const moonDistEl = document.getElementById('artemis-moon-dist');
+            if (moonDistEl) moonDistEl.textContent = (distFromMoon * 6371).toFixed(0) + ' km';
+            
+            const velEl = document.getElementById('artemis-vel');
+            if (velEl) velEl.textContent = artemisData.velocity.toFixed(0) + ' m/s';
+            
+            const altEl = document.getElementById('artemis-alt');
+            if (altEl) altEl.textContent = (distFromEarth * 6371 - 6371).toFixed(0) + ' km';
             
             // Update 3D position
-            artemisGroup.position.set(
-                artemisData.position.x,
-                artemisData.position.y,
-                artemisData.position.z
-            );
-            artemisGroup.lookAt(0, 0, 0);
+            if (artemisGroup) {
+                artemisGroup.position.set(
+                    artemisData.position.x,
+                    artemisData.position.y,
+                    artemisData.position.z
+                );
+                artemisGroup.lookAt(0, 0, 0);
+            }
             
             // Update timeline
             updateTimeline(playbackTime);
             
             // Update status
             if (!isPlaying) {
-                document.getElementById('playbackStatus').textContent = `PAUSED - Day ${days.toFixed(1)}`;
+                const statusEl = document.getElementById('playbackStatus');
+                if (statusEl) statusEl.textContent = `PAUSED - Day ${days.toFixed(1)}`;
             }
         }
         

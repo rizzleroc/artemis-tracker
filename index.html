@@ -648,20 +648,19 @@
         const goldMat = new THREE.MeshStandardMaterial({ color: 0xc9a050, metalness: 0.8, roughness: 0.3 });
         const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a3050, metalness: 0.3, roughness: 0.4 });
         
-        // Procedural Artemis fallback
+        // Procedural Artemis fallback (scaled to ~0.008 units)
         const artemisFallback = new THREE.Group();
-        const crew = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 32), whiteMat);
-        crew.position.y = 0.5;
+        const crew = new THREE.Mesh(new THREE.ConeGeometry(0.002, 0.004, 32), whiteMat);
+        crew.position.y = 0.002;
         artemisFallback.add(crew);
-        const service = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 1.0, 32), goldMat);
-        service.position.y = -0.5;
+        const service = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.005, 32), goldMat);
+        service.position.y = -0.002;
         artemisFallback.add(service);
         [[1,0],[-1,0],[0,1],[0,-1]].forEach(([x,z]) => {
-            const p = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.03, 0.6), solarMat);
-            p.position.set(x*1.4, -0.4, z*1.4);
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.009, 0.0002, 0.003), solarMat);
+            p.position.set(x*0.007, -0.002, z*0.007);
             artemisFallback.add(p);
         });
-        artemisFallback.scale.set(0.1, 0.1, 0.1);
         artemisGroup.add(artemisFallback);
         
         // Load Artemis GLB model
@@ -673,7 +672,7 @@
             artemisModel.position.sub(center);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 1 / maxDim;
+            const scale = 0.008 / maxDim; // Artemis ~5m vs Earth 6371km = ~0.000001 scale, exaggerated for visibility
             artemisModel.scale.set(scale, scale, scale);
             // Fix any green emission materials
             artemisModel.traverse((child) => {
@@ -694,23 +693,23 @@
         issGroup.visible = false;
         scene.add(issGroup);
         
-        // Procedural ISS fallback
+        // Procedural ISS fallback (scaled to ~0.015 units)
         const issFallback = new THREE.Group();
-        issFallback.add(new THREE.Mesh(new THREE.BoxGeometry(5, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
-        const issMod = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 16), whiteMat);
+        issFallback.add(new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.001, 0.003), new THREE.MeshStandardMaterial({ color: 0xcccccc })));
+        const issMod = new THREE.Mesh(new THREE.CylinderGeometry(0.001, 0.001, 0.006, 16), whiteMat);
         issMod.rotation.z = Math.PI/2;
         issFallback.add(issMod);
-        const issSolar1 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
-        issSolar1.position.set(0, 0.6, 1.8);
+        const issSolar1 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.0002, 0.004), solarMat);
+        issSolar1.position.set(0, 0.002, 0.006);
         issFallback.add(issSolar1);
-        const issSolar2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 1.2), solarMat);
-        issSolar2.position.set(0, 0.6, -1.8);
+        const issSolar2 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.0002, 0.004), solarMat);
+        issSolar2.position.set(0, 0.002, -0.006);
         issFallback.add(issSolar2);
         issGroup.add(issFallback);
         
-        // ISS Red marker for visibility
+        // ISS Red marker for visibility (small)
         const issMarker = new THREE.Mesh(
-            new THREE.SphereGeometry(0.5, 16, 16),
+            new THREE.SphereGeometry(0.003, 16, 16),
             new THREE.MeshBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.4 })
         );
         issGroup.add(issMarker);
@@ -725,7 +724,7 @@
             issModel.position.sub(center);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 2 / maxDim;
+            const scale = 0.015 / maxDim; // ISS ~100m vs Earth 6371km = ~0.00002 scale, exaggerated for visibility
             issModel.scale.set(scale, scale, scale);
             issModel.rotation.x = Math.PI / 2;
             issGroup.add(issModel);

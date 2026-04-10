@@ -896,19 +896,22 @@
             timelineItems.forEach((item, index) => {
                 item.classList.remove('completed', 'active');
                 
+                let status = '';
                 if (index === 0) { // Launch T+00:00
-                    item.classList.add(elapsedDays >= 0 ? 'completed' : '');
+                    status = elapsedDays >= 0 ? 'completed' : '';
                 } else if (index === 1) { // Core Stage T+00:08 (8 min)
-                    item.classList.add(elapsedDays >= 0.005 ? 'completed' : (elapsedDays >= 0 ? 'active' : ''));
+                    status = elapsedDays >= 0.005 ? 'completed' : (elapsedDays >= 0 ? 'active' : '');
                 } else if (index === 2) { // TLI Burn T+01:30 (1.5 hours)
-                    item.classList.add(elapsedDays >= 0.07 ? 'completed' : (elapsedDays >= 0.005 ? 'active' : ''));
+                    status = elapsedDays >= 0.07 ? 'completed' : (elapsedDays >= 0.005 ? 'active' : '');
                 } else if (index === 3) { // Lunar Flyby T+03.5d
-                    item.classList.add(elapsedDays >= 4 ? 'completed' : (elapsedDays >= 3.5 ? 'active' : ''));
+                    status = elapsedDays >= 4 ? 'completed' : (elapsedDays >= 3.5 ? 'active' : '');
                 } else if (index === 4) { // Return T+04-08d
-                    item.classList.add(elapsedDays >= 8 ? 'completed' : (elapsedDays >= 4 ? 'active' : ''));
+                    status = elapsedDays >= 8 ? 'completed' : (elapsedDays >= 4 ? 'active' : '');
                 } else if (index === 5) { // Splashdown T+10d
-                    item.classList.add(elapsedDays >= 10 ? 'completed' : (elapsedDays >= 8 ? 'active' : ''));
+                    status = elapsedDays >= 10 ? 'completed' : (elapsedDays >= 8 ? 'active' : '');
                 }
+                
+                if (status) item.classList.add(status);
             });
         }
         

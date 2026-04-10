@@ -759,10 +759,10 @@
         // Phase 3: Return to Earth - 50% to 100%
         for (let i = 0; i <= 50; i++) {
             const t = i / 50;
-            // Return path (different from outbound for figure-8)
+            // Return path: mirror of outbound but below Earth (negative Y)
             const x = 55 * (1 - t); // Back to Earth
-            const y = -Math.sin(t * Math.PI) * 4; // Arc under Earth
-            const z = (18 - t * 25); // Different Z path
+            const y = -Math.sin(t * Math.PI) * 5; // Arc under Earth (negative)
+            const z = Math.sin(t * Math.PI * 0.5) * 10; // Same Z as outbound
             trajPoints.push(new THREE.Vector3(x, y, z));
         }
         
@@ -946,10 +946,10 @@
             // Phase 3: Return to Earth (50% to 100% = 5 to 10 days)
             else {
                 const phaseT = (t - 0.5) / 0.5; // 0 to 1 within this phase
-                // Match trajectory line: x = 55 * (1-t), y = -sin(t*PI) * 4, z = 18 - t*25
+                // Match trajectory line: x = 55 * (1-t), y = -sin(t*PI) * 5, z = sin(t*PI*0.5) * 10
                 pos.x = 55 * (1 - phaseT);
-                pos.y = -Math.sin(phaseT * Math.PI) * 4;
-                pos.z = 18 - phaseT * 25;
+                pos.y = -Math.sin(phaseT * Math.PI) * 5; // Under Earth
+                pos.z = Math.sin(phaseT * Math.PI * 0.5) * 10;
                 vel = 9000;
                 phase = phaseT > 0.8 ? 'RE-ENTRY' : 'RETURN COAST';
             }
@@ -1299,6 +1299,9 @@
         addLog('ORBITAL COMMAND SYSTEM ONLINE', 'artemis');
         addLog('Scale: 384,400 km = 60 units', 'data');
         addLog('Moon positioned at (60, 0, 0)', 'data');
+        
+        // Set initial Artemis position
+        updatePlaybackDisplay();
         
         fetchData();
         setInterval(fetchData, 30000);

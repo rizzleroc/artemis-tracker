@@ -460,7 +460,8 @@
         scene.fog = new THREE.FogExp2(0x0a0c10, 0.00002);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
-        camera.position.set(50, 30, 80);
+        // Camera positioned for new scale (Earth radius = 1)
+        camera.position.set(5, 3, 8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -475,14 +476,14 @@
         // ========== LIGHTING ==========
         scene.add(new THREE.AmbientLight(0x203040, 0.3));
         const sunLight = new THREE.DirectionalLight(0xfff8e8, 1.8);
-        sunLight.position.set(500, 200, 300);
+        sunLight.position.set(50, 20, 30); // Scaled down to match
         scene.add(sunLight);
 
         // ========== CONTROLS ==========
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.minDistance = 12;
+        controls.minDistance = 1.5;
         controls.maxDistance = 5000;
         controls.enablePan = true;
         controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
@@ -500,9 +501,10 @@
             undefined, () => { earthMat.color.setHex(0x1a3a5a); }
         );
         
-        earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(10, 128, 128), earthMat));
+        // Earth radius = 6371 km = ~1 unit at this scale
+        earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(1, 128, 128), earthMat));
         earthGroup.add(new THREE.Mesh(
-            new THREE.SphereGeometry(10.5, 64, 64),
+            new THREE.SphereGeometry(1.05, 64, 64),
             new THREE.MeshBasicMaterial({ color: 0x6090c0, transparent: true, opacity: 0.12, side: THREE.BackSide, blending: THREE.AdditiveBlending })
         ));
 
@@ -515,7 +517,8 @@
             (tex) => { moonMat.map = tex; },
             undefined, () => {}
         );
-        moonGroup.add(new THREE.Mesh(new THREE.SphereGeometry(2.7, 64, 64), moonMat));
+        // Moon radius = 1737 km = ~0.27 unit at this scale
+        moonGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.27, 64, 64), moonMat));
 
         // ========== CORRECT SCALE ==========
         // Moon orbit: 384,400 km average = 60 units in scene
@@ -777,11 +780,11 @@
                 }
             }
             
-            // ISS in Earth orbit
+            // ISS in Earth orbit (Earth radius = 1 unit)
             if (allData.iss) {
                 const phi = (90 - allData.iss.latitude) * Math.PI / 180;
                 const theta = (allData.iss.longitude + 180) * Math.PI / 180;
-                const r = 10 + (allData.iss.altitude / EARTH_RADIUS_KM) * 10;
+                const r = 1 + (allData.iss.altitude / EARTH_RADIUS_KM); // ~1.06 for ISS at 400km
                 issGroup.position.set(
                     r * Math.sin(phi) * Math.cos(theta),
                     r * Math.cos(phi),
@@ -793,12 +796,16 @@
             if (allData.planets?.planets) {
                 while(planetsGroup.children.length) planetsGroup.remove(planetsGroup.children[0]);
                 allData.planets.planets.forEach(p => {
-                    const size = p.name === 'Jupiter' ? 4 : p.name === 'Saturn' ? 3.5 : 1.8;
+                    // Planet sizes relative to Earth (radius = 1 unit)
+                    // Jupiter = 11x Earth, Saturn = 9x, Venus = 0.95x, Mars = 0.53x
+                    // Exaggerated for visibility but more realistic
+                    const size = p.name === 'Jupiter' ? 2 : p.name === 'Saturn' ? 1.8 : p.name === 'Venus' ? 0.9 : 0.5;
                     const mesh = new THREE.Mesh(
                         new THREE.SphereGeometry(size, 24, 24),
                         new THREE.MeshStandardMaterial({ color: p.color, metalness: 0.1, roughness: 0.8 })
                     );
-                    mesh.position.set(p.x * 0.5, p.y, p.z * 0.5);
+                    // Position planets much further out (scale down by 100x instead of 2x)
+                    mesh.position.set(p.x * 0.01, p.y * 0.02, p.z * 0.01);
                     planetsGroup.add(mesh);
                 });
             }
@@ -812,7 +819,7 @@
                         const sat = sats[i];
                         const phi = (90 - sat.latitude) * Math.PI / 180;
                         const theta = (sat.longitude + 180) * Math.PI / 180;
-                        const r = 10 + (sat.altitude / EARTH_RADIUS_KM) * 10;
+                        const r = 1 + (sat.altitude / EARTH_RADIUS_KM);
                         
                         satMesh.position.set(
                             r * Math.sin(phi) * Math.cos(theta),
@@ -839,19 +846,19 @@
             
             switch(mode) {
                 case 'artemis':
-                    endPos = artemisGroup.position.clone().add(new THREE.Vector3(5, 3, 5));
+                    endPos = artemisGroup.position.clone().add(new THREE.Vector3(0.5, 0.3, 0.5));
                     endTarget = artemisGroup.position.clone();
                     break;
                 case 'moon':
-                    endPos = new THREE.Vector3(75, 20, 30);
+                    endPos = new THREE.Vector3(8, 2, 4);
                     endTarget = moonGroup.position.clone();
                     break;
                 case 'earth':
-                    endPos = new THREE.Vector3(20, 12, 30);
+                    endPos = new THREE.Vector3(3, 2, 4);
                     endTarget = new THREE.Vector3(0, 0, 0);
                     break;
                 case 'system':
-                    endPos = new THREE.Vector3(200, 100, 200);
+                    endPos = new THREE.Vector3(25, 10, 25);
                     endTarget = new THREE.Vector3(30, 0, 0);
                     break;
                 default: return;
@@ -910,7 +917,7 @@
             earthGroup.rotation.y += 0.0002;
             
             if (cameraMode === 'artemis') {
-                camera.position.copy(artemisGroup.position).add(new THREE.Vector3(5, 3, 5));
+                camera.position.copy(artemisGroup.position).add(new THREE.Vector3(0.5, 0.3, 0.5));
                 controls.target.copy(artemisGroup.position);
             }
             

@@ -278,39 +278,55 @@ function calculateMoonData() {
     };
 }
 
-// VSOP87 - Planetary Positions
+// VSOP87 - Planetary Positions (scaled for visualization)
+// Scale: Moon orbit (384,400 km) = 60 units
+// So 1 unit = 6,407 km
 function calculatePlanetaryPositions() {
     const now = new Date();
     const jd = (now / 86400000) + 2440587.5;
     
+    // Planet data: period (days), distance (million km), radius (km), color
+    // Distances are scaled logarithmically for visibility
     const planets = [
-        { name: 'Mercury', period: 87.97, dist: 57.9, color: '#8C8C8C' },
-        { name: 'Venus', period: 224.7, dist: 108.2, color: '#E6E6B8' },
-        { name: 'Mars', period: 686.98, dist: 227.9, color: '#C1440E' },
-        { name: 'Jupiter', period: 4332.59, dist: 778.5, color: '#D4A547' },
-        { name: 'Saturn', period: 10759.22, dist: 1434, color: '#F4D03F' },
-        { name: 'Uranus', period: 30688.5, dist: 2871, color: '#AED6F1' },
-        { name: 'Neptune', period: 60195, dist: 4495, color: '#5B7CFF' }
+        { name: 'Mercury', period: 87.97, distAU: 0.39, radius: 2439, color: '#8C8C8C' },
+        { name: 'Venus', period: 224.7, distAU: 0.72, radius: 6051, color: '#E6E6B8' },
+        { name: 'Mars', period: 686.98, distAU: 1.52, radius: 3389, color: '#C1440E' },
+        { name: 'Jupiter', period: 4332.59, distAU: 5.20, radius: 69911, color: '#D4A547' },
+        { name: 'Saturn', period: 10759.22, distAU: 9.58, radius: 58232, color: '#F4D03F' },
+        { name: 'Uranus', period: 30688.5, distAU: 19.22, radius: 25362, color: '#AED6F1' },
+        { name: 'Neptune', period: 60195, distAU: 30.05, radius: 24622, color: '#5B7CFF' }
     ];
+    
+    // Scale factor: compress outer planets for visualization
+    // Inner planets (<2 AU): realistic scale
+    // Outer planets: logarithmic compression
+    const scaleDistance = (au) => {
+        if (au <= 1.5) return au * 60; // Linear: 1 AU = 60 units (Moon distance)
+        return 90 + Math.log(au / 1.5) * 30; // Logarithmic compression for outer planets
+    };
     
     const positions = planets.map(p => {
         const angle = (jd / p.period) * 2 * Math.PI;
+        const scaledDist = scaleDistance(p.distAU);
         return {
             name: p.name,
-            distance: p.dist,
+            distanceAU: p.distAU,
+            distanceMkm: p.distAU * 149.6,
             angle: angle,
-            x: Math.cos(angle) * p.dist,
-            z: Math.sin(angle) * p.dist,
+            x: Math.cos(angle) * scaledDist,
+            z: Math.sin(angle) * scaledDist,
             y: 0,
             color: p.color,
+            radius: p.radius,
             period: p.period
         };
     });
     
     return {
         planets: positions,
+        scale: 'Hybrid: Inner linear (1 AU = 60 units), Outer logarithmic',
         earth: { x: 0, z: 0, y: 0 },
-        source: 'VSOP87 (simplified)',
+        source: 'VSOP87 (scaled for visualization)',
         timestamp: now.toISOString()
     };
 }

@@ -475,6 +475,10 @@
             <div class="metric-label">Spacecraft Altitude</div>
             <div class="metric-value" id="artemis-alt">---</div>
         </div>
+        <div class="metric">
+            <div class="metric-label">Data Source</div>
+            <div class="metric-value" id="data-source" style="font-size: 10px; color: #5a7088;">Loading...</div>
+        </div>
         
         <div class="timeline">
             <div class="timeline-item completed"><span class="timeline-time">T+00:00</span><span class="timeline-event">Launch</span></div>
@@ -1065,6 +1069,16 @@
         }
 
         function updateUI() {
+            // Update data source indicator
+            const sourceEl = document.getElementById('data-source');
+            if (allData.artemis?.source?.includes('NASA')) {
+                sourceEl.textContent = 'NASA JPL HORIZONS';
+                sourceEl.style.color = '#50a080';
+            } else if (allData.artemis?.source?.includes('Mission Profile')) {
+                sourceEl.textContent = 'MISSION SIMULATION';
+                sourceEl.style.color = '#c9a050';
+            }
+            
             if (allData.artemis) {
                 document.getElementById('artemis-dist').textContent = allData.artemis.distKm.toLocaleString() + ' km';
                 document.getElementById('artemis-moon-dist').textContent = allData.artemis.moonDistKm.toLocaleString() + ' km';
@@ -1080,6 +1094,17 @@
                     const m = Math.floor((remaining % 3600000) / 60000);
                     const s = Math.floor((remaining % 60000) / 1000);
                     document.getElementById('next-burn').textContent = `TEI -${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                }
+            }
+            
+            // Update DSN status if available
+            if (allData.dsn?.spacecraft?.includes('Artemis')) {
+                const stations = Object.entries(allData.dsn.stations || {})
+                    .filter(([_, s]) => s.status === 'ACTIVE')
+                    .map(([name, _]) => name.charAt(0).toUpperCase() + name.slice(1))
+                    .join(', ');
+                if (stations) {
+                    document.getElementById('dsn-status').textContent = stations;
                 }
             }
         }

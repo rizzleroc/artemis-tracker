@@ -344,6 +344,24 @@
             color: var(--palantir-artemis);
         }
         
+        /* Live Video Feed - Top Right */
+        .live-feed {
+            position: fixed;
+            top: 100px;
+            right: 24px;
+            width: 320px;
+            height: 180px;
+            z-index: 200;
+            background: var(--palantir-panel);
+            border: 1px solid var(--palantir-border);
+            overflow: hidden;
+        }
+        .live-feed iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
         /* Status - Bottom Right */
         .status-panel {
             position: fixed;
@@ -514,6 +532,17 @@
         <button class="view-btn" onclick="setCamera('system')">System</button>
     </div>
     
+    <!-- Live Video Feed -->
+    <div class="live-feed">
+        <iframe 
+            src="https://www.youtube.com/embed/m3kR2KK8TEs?autoplay=1&mute=0" 
+            title="NASA Live Stream" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+        </iframe>
+    </div>
+    
     <!-- Status -->
     <div class="status-panel">
         <div class="status-item">
@@ -577,8 +606,31 @@
         // ========== LIGHTING ==========
         scene.add(new THREE.AmbientLight(0x203040, 0.3));
         const sunLight = new THREE.DirectionalLight(0xfff8e8, 1.8);
-        sunLight.position.set(50, 20, 30); // Scaled down to match
+        sunLight.position.set(100, 50, 60);
         scene.add(sunLight);
+        
+        // Visible Sun mesh
+        const sunGeometry = new THREE.SphereGeometry(8, 64, 64);
+        const sunMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xffdd44,
+            emissive: 0xffaa00,
+            emissiveIntensity: 0.5
+        });
+        const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+        sunMesh.position.copy(sunLight.position);
+        scene.add(sunMesh);
+        
+        // Sun glow effect
+        const sunGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(12, 64, 64),
+            new THREE.MeshBasicMaterial({
+                color: 0xffaa00,
+                transparent: true,
+                opacity: 0.15
+            })
+        );
+        sunGlow.position.copy(sunLight.position);
+        scene.add(sunGlow);
 
         // ========== CONTROLS ==========
         const controls = new OrbitControls(camera, renderer.domElement);

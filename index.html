@@ -1156,53 +1156,44 @@
             if (allData.planets?.planets) {
                 while(planetsGroup.children.length) planetsGroup.remove(planetsGroup.children[0]);
                 allData.planets.planets.forEach(p => {
+                    // Validate data
+                    if (!p || typeof p.x !== 'number' || isNaN(p.x)) return;
+                    
                     // Planet sizes: Earth radius = 1 unit (6,371 km)
-                    // Actual radii: Mercury=0.38, Venus=0.95, Mars=0.53, Jupiter=11, Saturn=9, Uranus=4, Neptune=3.9
-                    // Scaled for visibility but proportional
                     const earthRadius = 6371;
-                    const relativeRadius = p.radius / earthRadius;
-                    // Exaggerate small planets, compress giants slightly for visual balance
+                    const relativeRadius = (p.radius || 6371) / earthRadius;
                     let displayRadius;
                     if (relativeRadius < 1) {
-                        displayRadius = Math.max(0.15, relativeRadius * 0.5); // Small planets: min 0.15
+                        displayRadius = Math.max(0.15, relativeRadius * 0.5);
                     } else {
-                        displayRadius = Math.min(3, relativeRadius * 0.15); // Giants: max 3
+                        displayRadius = Math.min(3, relativeRadius * 0.15);
                     }
                     
                     const mesh = new THREE.Mesh(
                         new THREE.SphereGeometry(displayRadius, 32, 32),
                         new THREE.MeshStandardMaterial({ 
-                            color: p.color, 
+                            color: p.color || '#ffffff', 
                             metalness: 0.1, 
-                            roughness: 0.7,
-                            emissive: p.color,
-                            emissiveIntensity: 0.1
+                            roughness: 0.7
                         })
                     );
-                    // Use scaled positions from API (already in scene units)
-                    mesh.position.set(p.x, p.y, p.z);
-                    
-                    // Add planet label
-                    mesh.userData = { 
-                        name: p.name, 
-                        distanceAU: p.distanceAU,
-                        distanceMkm: p.distanceMkm 
-                    };
-                    
+                    mesh.position.set(p.x, p.y || 0, p.z);
                     planetsGroup.add(mesh);
                     
                     // Add orbit ring
                     const orbitRadius = Math.sqrt(p.x*p.x + p.z*p.z);
-                    const orbitGeo = new THREE.RingGeometry(orbitRadius - 0.2, orbitRadius + 0.2, 64);
-                    const orbitMat = new THREE.MeshBasicMaterial({ 
-                        color: p.color, 
-                        transparent: true, 
-                        opacity: 0.15,
-                        side: THREE.DoubleSide
-                    });
-                    const orbitRing = new THREE.Mesh(orbitGeo, orbitMat);
-                    orbitRing.rotation.x = Math.PI / 2;
-                    planetsGroup.add(orbitRing);
+                    if (!isNaN(orbitRadius) && orbitRadius > 0) {
+                        const orbitGeo = new THREE.RingGeometry(orbitRadius - 0.2, orbitRadius + 0.2, 64);
+                        const orbitMat = new THREE.MeshBasicMaterial({ 
+                            color: p.color || '#ffffff', 
+                            transparent: true, 
+                            opacity: 0.15,
+                            side: THREE.DoubleSide
+                        });
+                        const orbitRing = new THREE.Mesh(orbitGeo, orbitMat);
+                        orbitRing.rotation.x = Math.PI / 2;
+                        planetsGroup.add(orbitRing);
+                    }
                 });
             }
             
@@ -1213,9 +1204,14 @@
                 starlinkSatellites.forEach((satMesh, i) => {
                     if (i < sats.length) {
                         const sat = sats[i];
+                        // Validate satellite data
+                        if (typeof sat.latitude !== 'number' || typeof sat.longitude !== 'number') {
+                            satMesh.visible = false;
+                            return;
+                        }
                         const phi = (90 - sat.latitude) * Math.PI / 180;
                         const theta = (sat.longitude + 180) * Math.PI / 180;
-                        const r = 1 + (sat.altitude / EARTH_RADIUS_KM);
+                        const r = 1 + ((sat.altitude || 550) / EARTH_RADIUS_KM);
                         
                         satMesh.position.set(
                             r * Math.sin(phi) * Math.cos(theta),

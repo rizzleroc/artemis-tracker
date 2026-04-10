@@ -970,6 +970,8 @@
             btn.textContent = isPlaying ? '⏸ PAUSE' : '▶ PLAY';
             document.getElementById('playbackStatus').textContent = 
                 isPlaying ? `PLAYING ${playbackSpeed}x - Day ${(playbackTime / 86400000).toFixed(1)}` : 'PAUSED';
+            // Hide loading overlay when user interacts with playback
+            document.getElementById('loading').classList.add('hidden');
             if (isPlaying) {
                 lastFrameTime = Date.now();
                 playbackLoop();
@@ -1065,9 +1067,11 @@
                 allData = await resp.json();
                 updateUI();
                 updatePositions();
-                document.getElementById('loading').classList.add('hidden');
             } catch(e) {
-                addLog('Telemetry lost', 'error');
+                addLog('Telemetry lost - using simulation', 'error');
+            } finally {
+                // Always hide loading, even if fetch fails
+                document.getElementById('loading').classList.add('hidden');
             }
         }
 
@@ -1330,6 +1334,11 @@
         
         // Set initial Artemis position
         updatePlaybackDisplay();
+        
+        // Hide loading after 3 seconds regardless
+        setTimeout(() => {
+            document.getElementById('loading').classList.add('hidden');
+        }, 3000);
         
         fetchData();
         setInterval(fetchData, 30000);

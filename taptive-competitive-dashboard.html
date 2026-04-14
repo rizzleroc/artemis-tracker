@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taptive.ai Competitive Intelligence Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #e2e8f0; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .competitor-card {
+            transition: all 0.3s ease;
+        }
+        .competitor-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .price-tag {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .feature-check { color: #10b981; }
+        .feature-x { color: #ef4444; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold gradient-text">Taptive.ai Intelligence</h1>
+                    <p class="text-xs text-slate-400">Real-time Competitive Analysis</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></div>
+                    <span class="text-xs text-emerald-400 font-medium">Live Data</span>
+                </div>
+                <span class="text-sm text-slate-400" id="last-updated">Updated: Just now</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-8 px-6 max-w-7xl mx-auto">
+        <!-- Executive Summary -->
+        <section class="mb-8">
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Executive Summary</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="metric-card rounded-xl p-4">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">Taptive Position</p>
+                        <p class="text-2xl font-bold text-blue-400">Mid-Market</p>
+                        <p class="text-xs text-slate-500 mt-1">Entry: $75/mo | Pro: $299/mo</p>
+                    </div>
+                    <div class="metric-card rounded-xl p-4">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">Primary Competitor</p>
+                        <p class="text-2xl font-bold text-purple-400">Blue Bite</p>
+                        <p class="text-xs text-slate-500 mt-1">Enterprise focus, custom pricing</p>
+                    </div>
+                    <div class="metric-card rounded-xl p-4">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">Market Gap</p>
+                        <p class="text-2xl font-bold text-emerald-400">SMB Segment</p>
+                        <p class="text-xs text-slate-500 mt-1">Affordable NFC + content builder</p>
+                    </div>
+                    <div class="metric-card rounded-xl p-4">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">GTM Opportunity</p>
+                        <p class="text-2xl font-bold text-amber-400">Creator Economy</p>
+                        <p class="text-xs text-slate-500 mt-1">TikTok/Instagram influencers</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Competitor Cards -->
+        <section class="mb-8">
+            <h2 class="text-lg font-semibold mb-4 text-slate-200">Competitive Landscape</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Taptive.ai -->
+                <div class="competitor-card glass-panel rounded-2xl p-6 border-2 border-blue-500/30">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-blue-400">Taptive.ai</h3>
+                        <span class="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">Target</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-4">NFC-powered content pages with drag-and-drop builder</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Entry Price</span>
+                            <span class="font-semibold">$75/month</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Pro Price</span>
+                            <span class="font-semibold">$299/month</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Enterprise</span>
+                            <span class="font-semibold">$999/month</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> Block-based builder</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> AI-powered creation</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> Real-time analytics</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-x">✗</span> Limited integrations</div>
+                    </div>
+                </div>
+
+                <!-- Blue Bite -->
+                <div class="competitor-card glass-panel rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-purple-400">Blue Bite</h3>
+                        <span class="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded">Leader</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-4">Enterprise connected products platform</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Pricing</span>
+                            <span class="font-semibold">Custom/Enterprise</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Focus</span>
+                            <span class="font-semibold">Luxury/Retail</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Authentication</span>
+                            <span class="font-semibold text-emerald-400">✓ Included</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> Product authentication</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> Experience Studio</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> CRM integrations</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> QR + NFC support</div>
+                    </div>
+                </div>
+
+                <!-- GoToTags -->
+                <div class="competitor-card glass-panel rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-emerald-400">GoToTags</h3>
+                        <span class="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded">Budget</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-4">NFC tag management and encoding platform</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Pricing</span>
+                            <span class="font-semibold">Subscription + per-tag</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Focus</span>
+                            <span class="font-semibold">Tag Management</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Best For</span>
+                            <span class="font-semibold">SMBs, Startups</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> Tag encoding</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-check">✓</span> URL redirects</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-x">✗</span> Limited analytics</div>
+                        <div class="flex items-center gap-2 text-sm"><span class="feature-x">✗</span> No content builder</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Comparison Chart -->
+        <section class="mb-8">
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Pricing Comparison</h2>
+                <canvas id="pricingChart" height="100"></canvas>
+            </div>
+        </section>
+
+        <!-- Feature Matrix -->
+        <section class="mb-8">
+            <div class="glass-panel rounded-2xl p-6 overflow-x-auto">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Feature Matrix</h2>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-700">
+                            <th class="text-left py-3 px-4 text-slate-400">Feature</th>
+                            <th class="text-center py-3 px-4 text-blue-400">Taptive.ai</th>
+                            <th class="text-center py-3 px-4 text-purple-400">Blue Bite</th>
+                            <th class="text-center py-3 px-4 text-emerald-400">GoToTags</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-700/50">
+                            <td class="py-3 px-4">Drag-and-drop builder</td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                        </tr>
+                        <tr class="border-b border-slate-700/50">
+                            <td class="py-3 px-4">AI content generation</td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                        </tr>
+                        <tr class="border-b border-slate-700/50">
+                            <td class="py-3 px-4">Real-time analytics</td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-check">✓</span> Basic</td>
+                        </tr>
+                        <tr class="border-b border-slate-700/50">
+                            <td class="py-3 px-4">Product authentication</td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                        </tr>
+                        <tr class="border-b border-slate-700/50">
+                            <td class="py-3 px-4">QR code support</td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                            <td class="text-center"><span class="feature-check">✓</span></td>
+                        </tr>
+                        <tr class="border-b border-slate-700/50">
+                            <td class="py-3 px-4">CRM integrations</td>
+                            <td class="text-center"><span class="feature-check">✓</span> Limited</td>
+                            <td class="text-center"><span class="feature-check">✓</span> Advanced</td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                        </tr>
+                        <tr class="border-b border-slate-700/50">
+                            <td class="py-3 px-4">White-label</td>
+                            <td class="text-center"><span class="feature-check">✓</span> Enterprise</td>
+                            <td class="text-center"><span class="feature-check">✓</span> Yes</td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4">API access</td>
+                            <td class="text-center"><span class="feature-check">✓</span> Enterprise</td>
+                            <td class="text-center"><span class="feature-check">✓</span> Yes</td>
+                            <td class="text-center"><span class="feature-x">✗</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- GTM Strategy -->
+        <section class="mb-8">
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Go-To-Market Strategy Analysis</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-md font-medium mb-3 text-blue-400">Taptive.ai Current GTM</h3>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-slate-800/50 rounded-lg">
+                                <p class="text-sm font-medium text-slate-300">Target Market</p>
+                                <p class="text-xs text-slate-400">Enterprises to Content Creators (broad)</p>
+                            </div>
+                            <div class="p-3 bg-slate-800/50 rounded-lg">
+                                <p class="text-sm font-medium text-slate-300">Pricing Strategy</p>
+                                <p class="text-xs text-slate-400">Tiered: $75 → $299 → $999/month</p>
+                            </div>
+                            <div class="p-3 bg-slate-800/50 rounded-lg">
+                                <p class="text-sm font-medium text-slate-300">Key Differentiator</p>
+                                <p class="text-xs text-slate-400">AI-powered content creation</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-md font-medium mb-3 text-emerald-400">Recommended GTM Pivot</h3>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                <p class="text-sm font-medium text-emerald-300">🎯 Focus: Creator Economy</p>
+                                <p class="text-xs text-slate-400 mt-1">TikTok/Instagram influencers with physical merch</p>
+                            </div>
+                            <div class="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                <p class="text-sm font-medium text-emerald-300">💰 Pricing: Freemium</p>
+                                <p class="text-xs text-slate-400 mt-1">Free tier (5 tags) → Pro $29 → Business $99</p>
+                            </div>
+                            <div class="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                <p class="text-sm font-medium text-emerald-300">🚀 Viral Loop</p>
+                                <p class="text-xs text-slate-400 mt-1">"Tap to unlock exclusive content" for fans</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Market Positioning -->
+        <section class="mb-8">
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Market Positioning Map</h2>
+                <canvas id="positioningChart" height="150"></canvas>
+            </div>
+        </section>
+
+        <!-- Action Items -->
+        <section>
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Strategic Recommendations</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                        <h4 class="font-medium text-red-400 mb-2">⚠️ Critical</h4>
+                        <ul class="text-sm text-slate-300 space-y-1">
+                            <li>• Add product authentication feature</li>
+                            <li>• Lower entry price to $29/mo</li>
+                            <li>• Fix technical stability issues</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                        <h4 class="font-medium text-amber-400 mb-2">⚡ Growth</h4>
+                        <ul class="text-sm text-slate-300 space-y-1">
+                            <li>• Target TikTok creators</li>
+                            <li>• Launch affiliate program</li>
+                            <li>• Add Shopify integration</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                        <h4 class="font-medium text-blue-400 mb-2">🔮 Long-term</h4>
+                        <ul class="text-sm text-slate-300 space-y-1">
+                            <li>• White-label for agencies</li>
+                            <li>• NFT integration for loyalty</li>
+                            <li>• Enterprise sales team</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Pricing Chart
+        const pricingCtx = document.getElementById('pricingChart').getContext('2d');
+        new Chart(pricingCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Entry Tier', 'Professional', 'Enterprise'],
+                datasets: [{
+                    label: 'Taptive.ai',
+                    data: [75, 299, 999],
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Blue Bite (est.)',
+                    data: [500, 1500, 5000],
+                    backgroundColor: 'rgba(147, 51, 234, 0.8)',
+                    borderColor: 'rgba(147, 51, 234, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'GoToTags',
+                    data: [29, 99, 299],
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#94a3b8', callback: v => '$' + v },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Positioning Chart
+        const positioningCtx = document.getElementById('positioningChart').getContext('2d');
+        new Chart(positioningCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Taptive.ai',
+                    data: [{x: 3, y: 2}],
+                    backgroundColor: 'rgba(59, 130, 246, 1)',
+                    pointRadius: 15
+                }, {
+                    label: 'Blue Bite',
+                    data: [{x: 5, y: 5}],
+                    backgroundColor: 'rgba(147, 51, 234, 1)',
+                    pointRadius: 15
+                }, {
+                    label: 'GoToTags',
+                    data: [{x: 2, y: 1}],
+                    backgroundColor: 'rgba(16, 185, 129, 1)',
+                    pointRadius: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const labels = {
+                                    'Taptive.ai': 'Mid-market, AI-focused',
+                                    'Blue Bite': 'Enterprise, luxury brands',
+                                    'GoToTags': 'Budget, tag management'
+                                };
+                                return labels[ctx.dataset.label];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Enterprise Features →', color: '#94a3b8' },
+                        min: 0, max: 6,
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Price Point →', color: '#94a3b8' },
+                        min: 0, max: 6,
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                    }
+                }
+            }
+        });
+
+        // Update timestamp
+        document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+    </script>
+</body>
+</html>

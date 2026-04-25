@@ -1,20 +1,20 @@
 {
-  "distKm": 271136,
-  "velMs": 1034,
-  "velKms": 1.03,
-  "moonDistKm": 113264,
-  "phase": "TRANS-LUNAR",
+  "distKm": 328507,
+  "velMs": 1023,
+  "velKms": 1.02,
+  "moonDistKm": 55893,
+  "phase": "OUTBOUND COAST",
   "source": "NASA JPL HORIZONS (LUNAR FALLBACK)",
   "targetName": "OBJ: MOON (CALIBRATION)",
   "position": {
-    "x": -271136,
+    "x": -328508,
     "y": 0,
     "z": 0
   },
   "velocity": {
-    "vx": -0.756,
-    "vy": -0.7,
-    "vz": -0.084
+    "vx": -0.567,
+    "vy": -0.848,
+    "vz": -0.089
   },
-  "timestamp": "2026-04-24T23:40:37.795Z"
+  "timestamp": "2026-04-25T00:03:53.608Z"
 }

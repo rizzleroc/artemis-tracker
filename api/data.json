@@ -1,7 +1,7 @@
 {
   "distKm": 0,
-  "velMs": 851,
-  "velKms": 0.85,
+  "velMs": 977,
+  "velKms": 0.98,
   "moonDistKm": 384400,
   "phase": "EARTH ORBIT",
   "source": "NASA JPL HORIZONS (LUNAR FALLBACK)",
@@ -12,9 +12,9 @@
     "z": 0
   },
   "velocity": {
-    "vx": -0.851,
+    "vx": -0.977,
     "vy": 0,
-    "vz": 0
+    "vz": -0.014
   },
-  "timestamp": "2026-09-02T23:56:15.562Z"
+  "timestamp": "2026-09-03T00:54:13.533Z"
 }

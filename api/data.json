@@ -1,7 +1,7 @@
 {
   "distKm": 76056,
-  "velMs": 99,
-  "velKms": 0.1,
+  "velMs": 340,
+  "velKms": 0.34,
   "moonDistKm": 308344,
   "phase": "CLIMBING",
   "source": "NASA JPL HORIZONS (LUNAR FALLBACK)",
@@ -12,9 +12,9 @@
     "z": 0
   },
   "velocity": {
-    "vx": -0.1,
+    "vx": -0.34,
     "vy": 0,
     "vz": 0
   },
-  "timestamp": "2026-10-23T23:31:08.731Z"
+  "timestamp": "2026-10-24T01:57:03.776Z"
 }
